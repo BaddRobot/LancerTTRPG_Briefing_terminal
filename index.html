@@ -163,6 +163,8 @@ textarea.in{resize:vertical;min-height:240px;line-height:1.45}
 .check{display:flex;gap:8px;align-items:center;cursor:pointer;font-size:.95em}
 .check input{accent-color:var(--accent);width:16px;height:16px}
 .hint{color:var(--dim);font-size:.85em;line-height:1.4}
+.srchead{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.srchead .btn{padding:5px 10px;font-size:.75em}
 .two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 
 .display{background:var(--panel);border:1px solid var(--line);position:relative;min-width:0}
@@ -335,21 +337,17 @@ details.more[open] summary{margin-bottom:6px}
 </head>
 <body>
 <div class="topbar">
-  <div class="brand">Briefing Terminal<small id="brandSub">Paste field notes. Get an operations order.</small></div>
+  <div class="brand">Briefing Terminal<small id="brandSub">Mission briefing</small></div>
 </div>
 
 <main class="app">
   <aside class="panel console" id="console">
-    <h2>Source text</h2>
-    <div class="field">
-      <textarea id="src" class="in" spellcheck="false" aria-label="Source text"></textarea>
-      <p class="hint">Loaded from briefing.txt when the page opens. Put CLASSIFICATION, OPERATION, FROM and TO lines at the top, then a --- line, to set the Header fields. Plain prose works. Headings such as SITUATION, MISSION, THREATS, FACTIONS, PERSONS or LOCATIONS sort the text more precisely. Under PERSONS, FACTIONS and LOCATIONS, start each entry with <i>Name -- description</i> (a blank line between entries). Edits here last until you reload.</p>
-    </div>
-    <div class="row">
-      <button id="go" class="btn">Generate briefing</button>
-      <button id="sample" class="btn ghost">Sample</button>
-      <button id="clear" class="btn ghost">Clear</button>
-      <label class="btn ghost" for="pick" style="cursor:pointer">Open .txt</label><input type="file" id="pick" accept=".txt,text/plain" hidden>
+    <div class="srchead"><h2>Options</h2><button class="btn ghost" id="toggleSrc" aria-controls="console" aria-expanded="true">Hide panel</button></div>
+    <div hidden id="state-holders">
+      <textarea id="src" tabindex="-1" aria-hidden="true" readonly></textarea>
+      <select id="classif"><option>UNCLASSIFIED</option><option>RESTRICTED</option><option>SECRET</option><option selected>TOP SECRET</option></select>
+      <input id="opName" readonly><input id="issuer" readonly><input id="recipient" readonly>
+      <textarea id="xPersons" readonly></textarea><textarea id="xFacs" readonly></textarea><textarea id="xLocs" readonly></textarea>
     </div>
 
     <details class="opt">
@@ -374,35 +372,6 @@ details.more[open] summary{margin-bottom:6px}
     </div>
   </div>
 
-      </div>
-    </details>
-
-    <details class="opt" open>
-      <summary>Header</summary>
-      <div class="body">
-        <div class="field"><label for="classif">Classification</label>
-          <select id="classif" class="in">
-            <option>UNCLASSIFIED</option><option>RESTRICTED</option><option>SECRET</option><option selected>TOP SECRET</option>
-          </select></div>
-        <div class="field"><label for="opName">Operation name</label>
-          <input id="opName" class="in" placeholder="Auto-generated"></div>
-        <div class="field"><label for="issuer">From</label>
-          <input id="issuer" class="in" value="Fleet Intelligence Command"></div>
-        <div class="field"><label for="recipient">To</label>
-          <input id="recipient" class="in" value="Strike Team Leaders"></div>
-      </div>
-    </details>
-
-    <details class="opt">
-      <summary>Track extra names</summary>
-      <div class="body">
-        <p class="hint">Names without a title (Captain, Dr., Agent) or groups without a word like Guild or Syndicate can be missed. List them here, one per line, to force them into the tabs.</p>
-        <div class="field"><label for="xPersons">Persons</label>
-          <textarea id="xPersons" class="in" style="min-height:70px" spellcheck="false"></textarea></div>
-        <div class="field"><label for="xFacs">Factions</label>
-          <textarea id="xFacs" class="in" style="min-height:70px" spellcheck="false"></textarea></div>
-        <div class="field"><label for="xLocs">Locations</label>
-          <textarea id="xLocs" class="in" style="min-height:70px" spellcheck="false"></textarea></div>
       </div>
     </details>
 
@@ -439,8 +408,8 @@ details.more[open] summary{margin-bottom:6px}
     </div>
     <div class="stage" id="stage" role="tabpanel" tabindex="0"></div>
     <div class="toolbar">
-      <span class="row" style="align-items:center"><button class="btn ghost" id="saveTxt">Save briefing.txt</button><button class="btn ghost" id="reload">Reload briefing.txt</button><button class="btn ghost" id="toggleSrc" aria-controls="console" aria-expanded="true">Hide source</button><span id="status">Ready</span></span>
-      <span class="row"><button class="btn ghost" id="restore" hidden>Restore removed (0)</button><button class="btn ghost" id="reroll">New op name</button><button class="btn ghost" id="print">Print</button><button class="btn ghost" id="copy">Copy as text</button></span>
+      <span class="row" style="align-items:center"><button class="btn ghost" id="reload">Refresh now</button><button class="btn ghost" id="showSrc" hidden>Show options</button><span id="status">Ready</span></span>
+      <span class="row"><button class="btn ghost" id="restore" hidden>Restore removed (0)</button><button class="btn ghost" id="print">Print</button><button class="btn ghost" id="copy">Copy as text</button></span>
     </div>
   </section>
 </main>
@@ -1068,10 +1037,9 @@ const state={model:analyze('',{}),full:null,removed:new Set(),meta:{},tab:'brief
 function persistOpen(){store.set('bt-open',JSON.stringify([...state.open]))}
 function persist(){store.set('bt-removed',JSON.stringify([...state.removed]));store.set('bt-done',JSON.stringify([...state.done]))}
 const FIELDS=[['#classif','bt-classif'],['#opName','bt-op'],['#issuer','bt-from'],['#recipient','bt-to']];
-const saveFields=()=>{FIELDS.forEach(([s,k])=>store.set(k,$(s).value));store.set('bt-seed',String(state.seed))};
+const saveFields=()=>{};
 const XFIELDS=[['#xPersons','bt-xp'],['#xFacs','bt-xf'],['#xLocs','bt-xl']];
-const saveExtras=()=>XFIELDS.forEach(([s,k])=>store.set(k,$(s).value));
-const saveDraft=()=>store.set('bt-draft',$('#src').value);
+const saveDraft=()=>{};
 function applyRemovals(){
   const f=state.full,rm=state.removed,keep=(t,e)=>!rm.has(t+':'+e.name.toLowerCase());
   state.model=Object.assign({},f,{persons:f.persons.filter(e=>keep('p',e)),factions:f.factions.filter(e=>keep('f',e)),locations:f.locations.filter(e=>keep('l',e)),codex:f.codex.filter(e=>keep('x',e))});
@@ -1110,7 +1078,7 @@ function applyHeader(h){
 }
 function ingest(text){
   const h=splitHeader(text);
-  const note=h.found?applyHeader(h):'';
+  const note=applyHeader(h);
   $('#src').value=h.body;saveDraft();
   return note;
 }
@@ -1513,15 +1481,6 @@ $('#tabs').addEventListener('keydown',e=>{
   const n=ts[(i+(e.key==='ArrowRight'?1:ts.length-1))%ts.length];n.focus();show(n.dataset.tab);
 });
 $('#restore').onclick=()=>{state.removed.clear();persist();applyRemovals();counts();show(state.tab);$('#status').textContent='Restored removed entries'};
-$('#go').onclick=generate;
-$('#sample').onclick=()=>{
-  const [label,body]=SAMPLES[state.sample%SAMPLES.length];state.sample++;
-  state.removed.clear();state.done.clear();persist();
-  ingest(body);
-  generate();$('#status').textContent='Loaded '+label;
-};
-$('#clear').onclick=()=>{state.removed.clear();state.done.clear();persist();$('#src').value='';$('#xPersons').value='';$('#xFacs').value='';$('#xLocs').value='';saveExtras();generate()};
-$('#reroll').onclick=()=>{state.seed++;$('#opName').value='';saveFields();if(state.model.empty)return;state.meta=makeMeta(state.model,readInputs().src);show(state.tab)};
 $('#classif').onchange=()=>{if(!state.model.empty){state.meta.classif=$('#classif').value;if(state.tab==='brief')show('brief')}};
 OPT_BOXES.forEach(([id,key])=>{$('#'+id).onchange=()=>{store.set(key,$('#'+id).checked?'1':'0');syncLook()}});
 $('#optBoot').onchange=()=>store.set('bt-boot',$('#optBoot').checked?'1':'0');
@@ -1551,61 +1510,50 @@ $('#copy').onclick=async()=>{
 function setSource(hide,keep){
   $('#console').hidden=hide;
   $('.app').classList.toggle('solo',hide);
-  const b=$('#toggleSrc');b.textContent=hide?'Show source':'Hide source';b.setAttribute('aria-expanded',String(!hide));
+  $('#showSrc').hidden=!hide;
+  $('#toggleSrc').setAttribute('aria-expanded',String(!hide));
   if(!keep) store.set('bt-hide',hide?'1':'0');
 }
-$('#toggleSrc').onclick=()=>setSource(!$('#console').hidden);
+$('#toggleSrc').onclick=()=>setSource(true);
+$('#showSrc').onclick=()=>setSource(false);
 
 /* source file */
-async function loadBriefing(quiet){
-  let text='',err='',usedDraft=false,note='';
+const REFRESH_MS=90000, MIN_GAP_MS=30000;
+let lastText=null,lastCheck=0,busy=false;
+const clock=()=>new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+async function loadBriefing(quiet,manual){
+  if(busy) return;
+  busy=true;
+  let text='',err='';
   try{
-    const r=await fetch('briefing.txt',{cache:'no-store'});
+    const r=await fetch('briefing.txt?t='+Date.now(),{cache:'no-store'});
     if(!r.ok) throw new Error('HTTP '+r.status);
     text=await r.text();
     if(!text.trim()) throw new Error('the file is empty');
   }catch(e){err=e.message||'not found'}
-  if(text){note=ingest(text)}
-  else if(!$('#src').value.trim()){const d=store.get('bt-draft','');if(d){$('#src').value=d;usedDraft=true}else ingest(SAMPLE_LANCER)}
+  busy=false;lastCheck=Date.now();
+  const st=m=>$('#status').textContent=m;
+  if(!text){
+    if(lastText!==null){st(`Could not refresh (${err}). Showing the last briefing received. Retrying automatically.`);return}
+    state.model=analyze('',{});state.full=state.model;counts();
+    $('#stage').innerHTML='<div class="empty"><b>No briefing available</b><p>'+(location.protocol==='file:'
+      ?'This page must be opened from its web address, not from a file on your computer.'
+      :'The briefing file could not be loaded ('+esc(err)+'). The page will keep trying.')+'</p></div>';
+    st('Waiting for briefing…');return;
+  }
+  if(text===lastText){st(manual?`Checked ${clock()}. No changes.`:`Up to date. Last checked ${clock()}`);return}
+  const first=lastText===null;
+  lastText=text;
+  ingest(text);
   const boot=$('#optBoot').checked;
-  if(quiet) $('#optBoot').checked=false;
+  if(quiet||!first) $('#optBoot').checked=false;
   generate();
   $('#optBoot').checked=boot;
-  $('#status').textContent=text?'Loaded briefing.txt'+note:usedDraft?'briefing.txt could not be read. Showing the draft saved in this browser.':location.protocol==='file:'
-    ?'Browsers block pages opened straight from a folder from reading briefing.txt. Serve the folder with a local web server, or use Open .txt or drop a .txt file here. Showing the built-in sample.'
-    :`Could not read briefing.txt (${err}). Showing the built-in sample. Use Open .txt or drop a .txt file here.`;
+  st(first?`Briefing loaded ${clock()}`:`Briefing updated ${clock()}`);
 }
-async function loadFile(f){
-  if(!f) return;
-  try{const note=ingest(await f.text());generate();$('#status').textContent='Loaded '+f.name+note}
-  catch(x){$('#status').textContent='Could not read that file'}
-}
-addEventListener('dragover',e=>{if(e.dataTransfer&&[...e.dataTransfer.types].includes('Files'))e.preventDefault()});
-addEventListener('drop',e=>{const f=e.dataTransfer&&e.dataTransfer.files[0];if(f){e.preventDefault();loadFile(f)}});
-$('#reload').onclick=()=>loadBriefing(false);
-$('#src').addEventListener('input',saveDraft);
-XFIELDS.forEach(([s])=>$(s).addEventListener('input',saveExtras));
-FIELDS.forEach(([s])=>{$(s).addEventListener('input',saveFields);$(s).addEventListener('change',saveFields)});
-$('#saveTxt').onclick=async()=>{
-  const body=$('#src').value,st=m=>$('#status').textContent=m;
-  if(!body.trim()){st('Nothing to save');return}
-  const t=headerText()+body;
-  if(window.claude){
-    let d=null;
-    try{d=await window.claude.use('downloads')}catch(e){}
-    if(!d){st('Saving a file is not available in this view');return}
-    try{const r=await d.save({filename:'briefing.txt',data:t});st(r.status==='saved'?'Saved briefing.txt':'File sent')}
-    catch(e){st(e&&e.code==='declined'?'Save cancelled':'Could not save here ('+((e&&e.code)||'error')+')')}
-    return;
-  }
-  try{
-    const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([t],{type:'text/plain'}));a.download='briefing.txt';
-    document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),2000);
-    st('Saved briefing.txt to your downloads folder');
-  }catch(e){st('Could not save the file')}
-};
-$('#pick').onchange=e=>{loadFile(e.target.files[0]);e.target.value=''};
-
+setInterval(()=>{if(!document.hidden) loadBriefing(true)},REFRESH_MS);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&Date.now()-lastCheck>MIN_GAP_MS) loadBriefing(true)});
+$('#reload').onclick=()=>loadBriefing(false,true);
 /* boot */
 (function init(){
   const size=store.get('bt-size','');
@@ -1616,13 +1564,6 @@ $('#pick').onchange=e=>{loadFile(e.target.files[0]);e.target.value=''};
   setStyle(store.get('bt-style','green'),true);
   [['#optBoot','bt-boot'],['#optRedact','bt-redact']].forEach(([s,k])=>{const v=store.get(k,null);if(v!==null)$(s).checked=v==='1'});
   setSource(store.get('bt-hide','0')==='1',true);
-  FIELDS.forEach(([s,k])=>{
-    const v=store.get(k,null);if(v===null)return;
-    const el=$(s);if(el.tagName==='SELECT'&&![...el.options].some(o=>o.value===v||o.text===v))return;
-    el.value=v;
-  });
-  state.seed=parseInt(store.get('bt-seed','0'),10)||0;
-  XFIELDS.forEach(([s,k])=>{$(s).value=store.get(k,'')});
   try{state.removed=new Set(JSON.parse(store.get('bt-removed','[]')));state.done=new Set(JSON.parse(store.get('bt-done','[]')));state.open=new Set(JSON.parse(store.get('bt-open','[]')))}catch(e){}
   $('#stage').innerHTML='<div class="empty"><b>Loading</b><p>Reading briefing.txt…</p></div>';
   loadBriefing(true);
