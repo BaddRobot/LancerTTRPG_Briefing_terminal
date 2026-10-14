@@ -1,0 +1,1631 @@
+<!doctype html>
+<html lang="en" data-style="green">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Briefing Terminal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500&family=Cormorant+Garamond:wght@500;600;700&family=Courier+Prime:wght@400;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Jost:wght@400;500;600&family=Orbitron:wght@500;700&family=Oswald:wght@500;600;700&family=Rajdhani:wght@400;500;600&family=Share+Tech+Mono&family=Space+Mono:wght@400;700&family=Special+Elite&family=Stardos+Stencil:wght@400;700&family=VT323&display=swap">
+<style>
+/* Layout: two-pane console. Left pane takes source text and options; right pane is a tabbed
+   briefing display (Briefing / Persons / Factions / Locations / Objectives / Codex).
+   Ten switchable looks are token sets on [data-style]: five manufacturer houses (GMS, IPS-N,
+   SSC, HORUS, Harrison Armory) and five generic displays (Holo, Fleet, Amber, Green, Dossier).
+   Extra look options (typeface, density, glow, corner cuts, texture, scanlines) are attributes
+   on <html> so they work on top of any theme. */
+:root{
+  --bg:#050b14; --panel:#0a1a2b; --panel2:#0e2740; --ink:#d4f1ff; --dim:#86abc0;
+  --accent:#38e1ff; --on-accent:#021018; --warn:#ff6378; --ok:#5dffb0; --wary:#ffbe55; --line:#1f5170;
+  --glowc:rgba(56,225,255,.35); --head-glow:0 0 14px rgba(56,225,255,.5);
+  --f-display:'Orbitron',system-ui,sans-serif; --f-body:'Rajdhani',system-ui,sans-serif; --f-mono:'Share Tech Mono',ui-monospace,monospace;
+  --body-size:17px; --cutsize:12px; --track:.12em; --scan:.16;
+  --tex:linear-gradient(rgba(56,225,255,.06) 1px,transparent 1px),linear-gradient(90deg,rgba(56,225,255,.06) 1px,transparent 1px); --texsize:34px 34px;
+  color-scheme:dark;
+}
+[data-style="amber"]{
+  --bg:#100901; --panel:#190f03; --panel2:#251605; --ink:#ffb52e; --dim:#b07a1c;
+  --accent:#ffd36b; --on-accent:#100901; --warn:#ff6a3d; --ok:#ffd36b; --wary:#ff9d3d; --line:#6e4a10;
+  --glowc:rgba(255,181,46,.55); --head-glow:0 0 8px rgba(255,181,46,.7);
+  --f-display:'VT323',ui-monospace,monospace; --f-body:'VT323',ui-monospace,monospace; --f-mono:'VT323',ui-monospace,monospace;
+  --body-size:21px; --cutsize:0px; --track:.1em; --scan:.28;
+  --tex:radial-gradient(rgba(255,181,46,.12) 1px,transparent 1.3px); --texsize:6px 6px;
+}
+[data-style="green"]{
+  --bg:#010a03; --panel:#03130a; --panel2:#061f10; --ink:#46ff7a; --dim:#2ea652;
+  --accent:#b9ffcb; --on-accent:#010a03; --warn:#ffe14a; --ok:#b9ffcb; --wary:#ffc24a; --line:#17692f;
+  --glowc:rgba(70,255,122,.5); --head-glow:0 0 8px rgba(70,255,122,.7);
+  --f-display:'VT323',ui-monospace,monospace; --f-body:'VT323',ui-monospace,monospace; --f-mono:'VT323',ui-monospace,monospace;
+  --body-size:21px; --cutsize:0px; --track:.1em; --scan:.3;
+  --tex:radial-gradient(rgba(70,255,122,.12) 1px,transparent 1.3px); --texsize:6px 6px;
+}
+[data-style="paper"]{
+  --bg:#c8bea4; --panel:#ede5d0; --panel2:#e0d6bb; --ink:#1f1c16; --dim:#675e4b;
+  --accent:#a8231b; --on-accent:#f6f0df; --warn:#a8231b; --ok:#2c5b3a; --wary:#8a5200; --line:#a89c7e;
+  --glowc:transparent; --head-glow:none;
+  --f-display:'Special Elite',ui-monospace,monospace; --f-body:'Courier Prime',ui-monospace,monospace; --f-mono:'Courier Prime',ui-monospace,monospace;
+  --body-size:16px; --cutsize:0px; --track:.06em; --scan:0;
+  --tex:repeating-linear-gradient(0deg,rgba(80,64,32,.08) 0 1px,transparent 1px 26px); --texsize:auto;
+  color-scheme:light;
+}
+[data-style="fleet"]{
+  --bg:#0d1013; --panel:#151a1f; --panel2:#1d242b; --ink:#dde2e6; --dim:#8c969e;
+  --accent:#ff7a1a; --on-accent:#0d1013; --warn:#ff5252; --ok:#7bd88f; --wary:#ffc94a; --line:#2e3841;
+  --glowc:transparent; --head-glow:none;
+  --f-display:'Barlow Condensed',system-ui,sans-serif; --f-body:'Barlow',system-ui,sans-serif; --f-mono:'Share Tech Mono',ui-monospace,monospace;
+  --body-size:16px; --cutsize:0px; --track:.14em; --scan:0;
+  --tex:repeating-linear-gradient(135deg,rgba(255,255,255,.03) 0 2px,transparent 2px 14px); --texsize:auto;
+}
+
+/* --- Manufacturer houses --- */
+/* GMS: Union-nationalized, standardized and universally licensed. Pale institutional paperwork. */
+[data-style="gms"]{
+  --bg:#d9dfe6; --panel:#f5f7fa; --panel2:#e7ecf2; --ink:#18222e; --dim:#52606f;
+  --accent:#1c58b8; --on-accent:#ffffff; --warn:#b3261e; --ok:#17703f; --wary:#945200; --line:#a7b3c1;
+  --glowc:transparent; --head-glow:none;
+  --f-display:'IBM Plex Sans',system-ui,sans-serif; --f-body:'IBM Plex Sans',system-ui,sans-serif; --f-mono:'IBM Plex Mono',ui-monospace,monospace;
+  --body-size:16px; --cutsize:8px; --track:.08em; --scan:0;
+  --tex:linear-gradient(rgba(28,88,184,.08) 1px,transparent 1px),linear-gradient(90deg,rgba(28,88,184,.08) 1px,transparent 1px); --texsize:24px 24px;
+  color-scheme:light;
+}
+/* IPS-N: shipping and zero-g work, built to last. Hazard tape, stencil type, warm steel. */
+[data-style="ipsn"]{
+  --bg:#12100c; --panel:#1b1812; --panel2:#262017; --ink:#f0e8d8; --dim:#a8997f;
+  --accent:#ff7b1c; --on-accent:#14100a; --warn:#ff5640; --ok:#a5d36f; --wary:#ffd21f; --line:#4d4128;
+  --glowc:transparent; --head-glow:none;
+  --f-display:'Stardos Stencil',Impact,system-ui,sans-serif; --f-body:'Barlow',system-ui,sans-serif; --f-mono:'IBM Plex Mono',ui-monospace,monospace;
+  --body-size:16px; --cutsize:0px; --track:.1em; --scan:0;
+  --tex:repeating-linear-gradient(-45deg,rgba(255,123,28,.05) 0 12px,transparent 12px 24px); --texsize:auto;
+}
+/* SSC: premium, omninet-native, polished. Ink black, champagne gold, hairline double rules. */
+[data-style="ssc"]{
+  --bg:#09090c; --panel:#111116; --panel2:#19191f; --ink:#ede7d9; --dim:#a29c8b;
+  --accent:#d9b86c; --on-accent:#0a0a0d; --warn:#e5766a; --ok:#93d2ab; --wary:#e8b95a; --line:#3b3626;
+  --glowc:rgba(217,184,108,.18); --head-glow:0 0 12px rgba(217,184,108,.35);
+  --f-display:'Cormorant Garamond',Georgia,serif; --f-body:'Jost',system-ui,sans-serif; --f-mono:'Jost',system-ui,sans-serif;
+  --body-size:17px; --cutsize:0px; --track:.2em; --scan:0;
+  --tex:radial-gradient(circle at 18% 0%,rgba(217,184,108,.12),transparent 45%),radial-gradient(circle at 92% 100%,rgba(217,184,108,.07),transparent 40%); --texsize:auto;
+}
+/* HORUS: decentralized, internet-native, a little uncanny. Violet black, hot magenta, split-channel type. */
+[data-style="horus"]{
+  --bg:#06050b; --panel:#0d0b16; --panel2:#171226; --ink:#e6e0ff; --dim:#9087c2;
+  --accent:#ff58dc; --on-accent:#14061a; --warn:#ff6262; --ok:#4dffd2; --wary:#ffd84d; --line:#3a2c63;
+  --glowc:rgba(255,88,220,.22); --head-glow:2px 0 rgba(0,240,255,.65),-2px 0 rgba(255,88,220,.55);
+  --f-display:'Space Mono',ui-monospace,monospace; --f-body:'Space Mono',ui-monospace,monospace; --f-mono:'Space Mono',ui-monospace,monospace;
+  --body-size:15px; --cutsize:10px; --track:.08em; --scan:.2;
+  --tex:repeating-linear-gradient(0deg,rgba(255,88,220,.06) 0 1px,transparent 1px 4px),radial-gradient(circle at 82% 0%,rgba(0,240,255,.1),transparent 40%); --texsize:auto;
+}
+/* Harrison Armory: assertive, imperial, armed. Blackened red, bone type, angular cuts. */
+[data-style="ha"]{
+  --bg:#0c0707; --panel:#150d0d; --panel2:#201313; --ink:#ece2d3; --dim:#a69384;
+  --accent:#f0e4cf; --on-accent:#1a0a0a; --warn:#ff5446; --ok:#9bd6a2; --wary:#f5b94a; --line:#6e2420;
+  --glowc:transparent; --head-glow:none;
+  --f-display:'Oswald',system-ui,sans-serif; --f-body:'Barlow',system-ui,sans-serif; --f-mono:'Share Tech Mono',ui-monospace,monospace;
+  --body-size:16px; --cutsize:16px; --track:.14em; --scan:.08;
+  --tex:linear-gradient(180deg,rgba(224,58,47,.14),transparent 240px); --texsize:auto;
+}
+
+/* --- Look options layered on top of any theme --- */
+html[data-glow="off"]{--glowc:transparent;--head-glow:none}
+html[data-font="mono"]{--f-body:'Share Tech Mono',ui-monospace,monospace}
+html[data-font="serif"]{--f-body:Georgia,'Times New Roman',serif}
+html[data-font="sans"]{--f-body:system-ui,-apple-system,'Segoe UI',sans-serif}
+html[data-tex="on"] body{background-image:var(--tex);background-size:var(--texsize,auto);background-attachment:fixed}
+html[data-cut="on"] .panel,html[data-cut="on"] .display{clip-path:polygon(var(--cutsize) 0,100% 0,100% calc(100% - var(--cutsize)),calc(100% - var(--cutsize)) 100%,0 100%,0 var(--cutsize))}
+html[data-density="compact"] body{line-height:1.36}
+html[data-density="compact"] .stage{padding:12px 14px;min-height:320px}
+html[data-density="compact"] .doc{gap:14px}
+html[data-density="compact"] .cards{gap:8px}
+html[data-density="compact"] .card{padding:10px;gap:7px}
+html[data-density="compact"] .panel{padding:12px}
+
+*{box-sizing:border-box}
+body{margin:0;background-color:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:var(--body-size);line-height:1.5;padding-inline:16px;padding-block:16px 48px;padding-top:max(16px,env(safe-area-inset-top,0px))}
+img{max-width:100%}
+[hidden]:not([hidden=until-found i]){display:none!important}
+button,input,select,textarea{font:inherit;color:inherit}
+h1,h2,h3,h4,p,ul,dl,dd{margin:0}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+.topbar{max-width:1320px;margin:0 auto 16px;display:flex;flex-wrap:wrap;gap:12px 28px;align-items:center;justify-content:space-between;padding-bottom:14px;border-bottom:1px solid var(--line)}
+.brand{font-family:var(--f-display);text-transform:uppercase;letter-spacing:var(--track);font-size:1.15em;color:var(--accent);text-shadow:var(--head-glow);line-height:1.2}
+.brand small{display:block;font-family:var(--f-mono);text-transform:none;letter-spacing:.04em;font-size:.68em;color:var(--dim);text-shadow:none;margin-top:2px}
+.stylewrap{display:flex;flex-wrap:wrap;gap:8px 22px;align-items:center}
+.styles{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.styles .lbl{font-family:var(--f-mono);font-size:.72em;text-transform:uppercase;letter-spacing:.12em;color:var(--dim);margin-right:4px}
+.chip{background:transparent;border:1px solid var(--line);padding:5px 11px;cursor:pointer;font-family:var(--f-mono);font-size:.8em;text-transform:uppercase;letter-spacing:.08em;color:var(--dim)}
+.chip:hover{border-color:var(--accent);color:var(--ink)}
+.chip[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+
+.app{max-width:1320px;margin:0 auto;display:grid;gap:16px;grid-template-columns:minmax(290px,370px) minmax(0,1fr);align-items:start}
+@media (max-width:900px){.app{grid-template-columns:minmax(0,1fr)}}
+.app.solo{grid-template-columns:minmax(0,1fr)}
+.console[hidden]{display:none}
+.panel{background:var(--panel);border:1px solid var(--line);padding:16px;min-width:0}
+
+.console{display:grid;gap:14px}
+.console h2,.opt summary{font-family:var(--f-display);text-transform:uppercase;letter-spacing:var(--track);font-size:.9em;color:var(--accent);font-weight:600}
+.field{display:grid;gap:4px}
+.field label,.lab{font-family:var(--f-mono);font-size:.74em;text-transform:uppercase;letter-spacing:.1em;color:var(--dim)}
+.in{width:100%;background:var(--bg);border:1px solid var(--line);padding:8px 10px;font-family:var(--f-mono);font-size:.92em;color:var(--ink);border-radius:0}
+select.in{appearance:auto}
+textarea.in{resize:vertical;min-height:240px;line-height:1.45}
+.row{display:flex;flex-wrap:wrap;gap:8px}
+.btn{background:var(--accent);color:var(--on-accent);border:1px solid var(--accent);padding:9px 16px;cursor:pointer;font-family:var(--f-display);text-transform:uppercase;letter-spacing:var(--track);font-size:.85em;font-weight:600}
+.btn:hover{filter:brightness(1.12)}
+.btn.ghost{background:transparent;color:var(--ink);border-color:var(--line);font-weight:500}
+.btn.ghost:hover{border-color:var(--accent);color:var(--accent)}
+.opt{border-top:1px solid var(--line);padding-top:10px}
+.opt summary{cursor:pointer;list-style:none;display:flex;justify-content:space-between}
+.opt summary::after{content:"+";color:var(--dim)}
+.opt[open] summary::after{content:"\2212"}
+.opt .body{display:grid;gap:10px;margin-top:10px}
+.check{display:flex;gap:8px;align-items:center;cursor:pointer;font-size:.95em}
+.check input{accent-color:var(--accent);width:16px;height:16px}
+.hint{color:var(--dim);font-size:.85em;line-height:1.4}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+
+.display{background:var(--panel);border:1px solid var(--line);position:relative;min-width:0}
+.display.crt::after{content:"";position:absolute;inset:0;pointer-events:none;z-index:3;background:repeating-linear-gradient(0deg,rgba(0,0,0,var(--scan)) 0 1px,transparent 1px 3px)}
+.tabs{display:flex;overflow-x:auto;border-bottom:1px solid var(--line);background:var(--panel2)}
+.tab{flex:1 0 auto;background:transparent;border:0;border-bottom:3px solid transparent;padding:12px 16px;cursor:pointer;font-family:var(--f-display);text-transform:uppercase;letter-spacing:var(--track);font-size:.82em;color:var(--dim);white-space:nowrap;font-weight:600}
+.tab:hover{color:var(--ink)}
+.tab[aria-selected="true"]{color:var(--accent);border-bottom-color:var(--accent);background:var(--panel);text-shadow:var(--head-glow)}
+.tab .n{font-family:var(--f-mono);font-size:.9em;margin-left:6px;padding:1px 6px;border:1px solid currentColor;opacity:.85}
+.stage{padding:clamp(14px,3vw,28px);min-height:420px;min-width:0}
+.toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;padding:10px 16px;border-top:1px solid var(--line);background:var(--panel2);font-family:var(--f-mono);font-size:.78em;color:var(--dim)}
+.toolbar .btn{padding:6px 12px;font-size:.78em}
+
+/* --- per-house flourishes --- */
+[data-style="gms"] .panel,[data-style="gms"] .display{box-shadow:0 1px 3px rgba(20,40,70,.18)}
+[data-style="gms"] .banner{background:var(--warn);color:#fff;border-color:var(--warn)}
+[data-style="gms"] .banner small{color:#fff}
+[data-style="paper"] .panel,[data-style="paper"] .display{box-shadow:3px 4px 0 rgba(60,48,20,.25)}
+[data-style="ipsn"] .topbar{border-bottom:0;padding-bottom:20px;background:repeating-linear-gradient(-45deg,var(--wary) 0 9px,#12100c 9px 18px) left bottom/100% 6px no-repeat}
+[data-style="ipsn"] .banner{border-block-style:double;border-block-width:5px}
+[data-style="ipsn"] .tab[aria-selected="true"]{border-bottom-style:dashed}
+[data-style="ssc"] .panel,[data-style="ssc"] .display{box-shadow:inset 0 0 0 4px var(--panel),inset 0 0 0 5px var(--line)}
+[data-style="ssc"] .brand,[data-style="ssc"] .memo h1{font-weight:600;font-size:1.3em}
+[data-style="ssc"] .memo h1{font-size:1.9em}
+[data-style="ssc"] .sec h3,[data-style="ssc"] .card h4{font-size:1.15em}
+[data-style="ssc"] .banner{border-block-width:1px;letter-spacing:.36em}
+[data-style="horus"] .banner{border-block-style:dashed}
+[data-style="horus"] .tag,[data-style="horus"] .chip{border-style:dashed}
+[data-style="ha"] .banner{background:var(--warn);color:#150606;border-color:var(--warn)}
+[data-style="ha"] .banner small{color:#150606}
+[data-style="ha"] .tab[aria-selected="true"]{border-bottom-color:var(--warn)}
+[data-style="ha"] .memo h1{letter-spacing:.1em}
+
+/* --- briefing document --- */
+.doc{display:grid;gap:22px;max-width:78ch;margin:0 auto;text-shadow:0 0 5px var(--glowc)}
+.banner{text-align:center;font-family:var(--f-display);text-transform:uppercase;letter-spacing:.22em;font-weight:700;color:var(--warn);border-block:2px solid var(--warn);padding:6px 8px;font-size:.95em;text-shadow:none}
+.banner small{display:block;letter-spacing:.14em;font-family:var(--f-mono);font-weight:400;font-size:.7em;color:var(--warn);opacity:.9}
+.memo{display:grid;grid-template-columns:auto minmax(0,1fr);gap:16px 20px;align-items:start}
+@media (max-width:560px){.memo{grid-template-columns:minmax(0,1fr)}}
+.seal{width:84px;height:84px;color:var(--accent);opacity:.95}
+.memo h1{font-family:var(--f-display);text-transform:uppercase;letter-spacing:var(--track);font-size:1.5em;line-height:1.15;color:var(--accent);text-shadow:var(--head-glow);overflow-wrap:anywhere}
+.memo .auth{font-family:var(--f-mono);font-size:.78em;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);margin-bottom:4px}
+.fields{grid-column:1/-1;display:grid;grid-template-columns:max-content minmax(0,1fr);gap:4px 16px;font-family:var(--f-mono);font-size:.9em;border-top:1px solid var(--line);padding-top:12px}
+.fields dt{color:var(--dim);text-transform:uppercase;letter-spacing:.1em;font-size:.85em}
+.fields dd{overflow-wrap:anywhere}
+.sec h3{font-family:var(--f-display);text-transform:uppercase;letter-spacing:var(--track);font-size:1em;color:var(--accent);border-bottom:1px solid var(--line);padding-bottom:5px;margin-bottom:10px;display:flex;gap:10px;align-items:baseline;text-shadow:var(--head-glow)}
+.sec h3 .n{font-family:var(--f-mono);color:var(--dim);font-size:.9em;text-shadow:none}
+.sec p+p,.sec p+ul,.sec ul+p{margin-top:10px}
+.sec ul{padding-left:1.2em;display:grid;gap:4px}
+.sec p{max-width:68ch}
+.statement{border:1px solid var(--accent);border-left-width:5px;padding:10px 14px;margin-bottom:12px;background:var(--panel2)}
+.statement b{display:block;font-family:var(--f-mono);font-size:.74em;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:400;margin-bottom:2px}
+.ol{display:grid;gap:6px;list-style:none;padding:0!important}
+.ol li{display:grid;grid-template-columns:2.2em minmax(0,1fr) auto;gap:8px;align-items:baseline}
+.ol .k{font-family:var(--f-mono);color:var(--dim)}
+.tag{font-family:var(--f-mono);font-size:.7em;letter-spacing:.1em;text-transform:uppercase;padding:1px 7px;border:1px solid var(--line);color:var(--dim);white-space:nowrap;text-shadow:none}
+.tag.primary{border-color:var(--accent);color:var(--accent)}
+.tag.restriction,.tag.hostile{border-color:var(--warn);color:var(--warn)}
+.tag.allied{border-color:var(--ok);color:var(--ok)}
+.tag.wary,.tag.uncertain{border-color:var(--wary);color:var(--wary)}
+.tag.uncertain{border-style:dashed}
+.tag.neutral{border-color:var(--dim);color:var(--ink)}
+.tag.defunct{border-style:dotted;color:var(--dim)}
+.tag.kind{border-color:var(--accent);color:var(--accent);opacity:.9}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.lead{font-family:var(--f-mono);font-size:.78em;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);margin-top:12px}
+.chips button{background:transparent;border:1px solid var(--line);color:var(--ink);padding:2px 9px;cursor:pointer;font-size:.9em}
+.chips button:hover{border-color:var(--accent);color:var(--accent)}
+.chips button.p{border-style:dotted}
+.chips button.f.bad{border-color:var(--warn)}
+.chips button.x{border-color:var(--dim);border-style:dashed;color:var(--dim)}
+.sig{font-family:var(--f-mono);font-size:.85em;border-top:1px solid var(--line);padding-top:12px;display:flex;flex-wrap:wrap;justify-content:space-between;gap:6px 20px;color:var(--dim)}
+.ent{cursor:pointer;border-bottom:1px dotted var(--accent)}
+.ent-l{border-bottom-style:dashed;border-bottom-color:var(--ok)}
+.ent-f{border-bottom:1px solid var(--warn)}
+.ent-x{border-bottom:1px dotted var(--dim);cursor:help}
+.ent:hover{background:var(--panel2)}
+.doc.redact .ent-p:not(.revealed){color:transparent;background:var(--ink);border-bottom:0;text-shadow:none;user-select:none}
+.empty{color:var(--dim);text-align:center;padding:48px 12px;max-width:50ch;margin:0 auto;display:grid;gap:8px}
+.empty b{font-family:var(--f-display);text-transform:uppercase;letter-spacing:var(--track);color:var(--accent)}
+
+/* --- intel cards --- */
+.intro{color:var(--dim);margin-bottom:16px;max-width:70ch}
+.group-h{font-family:var(--f-display);text-transform:uppercase;letter-spacing:var(--track);font-size:.85em;color:var(--dim);margin:22px 0 10px;border-bottom:1px solid var(--line);padding-bottom:4px}
+.group-h:first-of-type{margin-top:0}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,290px),1fr));gap:14px}
+.card{border:1px solid var(--line);background:var(--panel2);padding:14px;display:grid;gap:10px;align-content:start;min-width:0;scroll-margin-top:12px}
+.card.flash{animation:flash 1.4s ease-out}
+@keyframes flash{0%,40%{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent)}100%{box-shadow:0 0 0 0 transparent}}
+.card header{display:flex;justify-content:space-between;gap:10px;align-items:start}
+.card h4{font-family:var(--f-display);text-transform:uppercase;letter-spacing:.06em;font-size:1em;color:var(--accent);line-height:1.25;overflow-wrap:anywhere}
+.card .sub{font-family:var(--f-mono);font-size:.78em;color:var(--dim);letter-spacing:.06em;text-transform:uppercase}
+.meta{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;font-family:var(--f-mono);font-size:.78em;color:var(--dim);text-transform:uppercase;letter-spacing:.08em}
+.pips{display:inline-flex;gap:3px;vertical-align:middle}
+.pips i{width:10px;height:10px;border:1px solid var(--line);display:block}
+.pips i.on{background:var(--warn);border-color:var(--warn)}
+.card ul{list-style:none;padding:0;display:grid;gap:7px}
+.card li{border-left:2px solid var(--line);padding-left:10px;font-size:.95em}
+.card header .hr{display:flex;gap:8px;align-items:start}
+.rm{background:transparent;border:1px solid var(--line);color:var(--dim);width:24px;height:24px;line-height:1;cursor:pointer;font-size:16px;padding:0;flex:none}
+.rm:hover{border-color:var(--warn);color:var(--warn)}
+.card .none{color:var(--dim);font-style:italic;font-size:.92em}
+.card .dos{font-size:.95em;max-width:none}
+.card .def{border-left:3px solid var(--accent);padding-left:10px;font-size:.95em}
+.card .tags{display:flex;flex-wrap:wrap;gap:6px}
+details.more summary{cursor:pointer;font-family:var(--f-mono);font-size:.78em;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);margin-top:6px}
+details.more[open] summary{margin-bottom:6px}
+.split{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,300px);gap:20px;align-items:start}
+@media (max-width:1100px){.split{grid-template-columns:minmax(0,1fr)}}
+.radarbox{border:1px solid var(--line);background:var(--bg);padding:8px;position:sticky;top:12px}
+.radar{width:100%;height:auto;display:block}
+.radar .ring{fill:none;stroke:var(--line);stroke-width:1}
+.radar .blip{fill:var(--accent);stroke:var(--bg);stroke-width:1;cursor:pointer}
+.radar .grat{fill:none;stroke:var(--accent);stroke-width:.5;opacity:.4}
+.radar .orbit{fill:none;stroke:var(--line);stroke-width:1;stroke-dasharray:2 4}
+.radar .halo{fill:none;stroke:var(--accent);stroke-width:5;opacity:.14}
+.radar .planet{stroke:var(--accent);stroke-width:1.2}
+.radar .planet[data-id]{cursor:pointer}
+.radar .ship{fill:var(--ok);stroke:var(--bg);stroke-width:.8;cursor:pointer}
+.radar .ship:hover{fill:var(--warn)}
+.radar .blip:hover{fill:var(--warn)}
+.radar text{fill:var(--ink);font-family:var(--f-mono);font-size:9px;paint-order:stroke;stroke:var(--bg);stroke-width:3px;pointer-events:none}
+.radarbox figcaption{font-size:.78em;color:var(--dim);margin-top:6px;font-family:var(--f-mono)}
+
+.tg{background:transparent;border:1px solid var(--line);color:var(--dim);width:24px;height:24px;line-height:1;cursor:pointer;font-size:16px;padding:0;flex:none}
+.tg:hover{border-color:var(--accent);color:var(--accent)}
+.tg::before{content:"+"}
+.card.open .tg::before{content:"\2212"}
+.card:not(.open) .cbody{display:none}
+.card .cbody{display:grid;gap:10px;align-content:start;min-width:0}
+.card.has-body>header{cursor:pointer}
+.allbar{display:flex;gap:8px;margin-bottom:12px}
+.allbar .btn{padding:5px 10px;font-size:.75em}
+
+/* --- objectives --- */
+.progress{display:grid;gap:6px;margin-bottom:18px}
+.bar{height:10px;border:1px solid var(--line);background:var(--bg)}
+.bar i{display:block;height:100%;width:0;background:var(--accent);transition:width .3s}
+.ogroup{margin-bottom:22px}
+.ogroup h4{font-family:var(--f-display);text-transform:uppercase;letter-spacing:var(--track);font-size:.85em;color:var(--dim);margin-bottom:8px}
+.obj{display:grid;grid-template-columns:auto minmax(0,1fr);gap:12px;align-items:start;border:1px solid var(--line);background:var(--panel2);padding:12px 14px;margin-bottom:8px;width:100%;text-align:left;cursor:pointer}
+.obj:hover{border-color:var(--accent)}
+.obj .box{width:22px;height:22px;border:2px solid var(--accent);display:grid;place-items:center;font-family:var(--f-mono);line-height:1;color:var(--on-accent);margin-top:2px}
+.obj[aria-checked="true"] .box{background:var(--accent)}
+.obj[aria-checked="true"] .t{text-decoration:line-through;opacity:.6}
+.obj .chips{margin-top:8px}
+.obj .chips span{font-size:.82em;border:1px solid var(--line);padding:1px 8px;color:var(--dim)}
+.boot{font-family:var(--f-mono);display:grid;gap:4px;color:var(--accent);padding:6px 0}
+.boot div::before{content:"> ";color:var(--dim)}
+@media (prefers-reduced-motion:reduce){.card.flash{animation:none;border-color:var(--accent)}.bar i{transition:none}}
+
+/* --- print: plain ink on white, current tab only --- */
+@media print{
+  html[data-style]{--bg:#fff;--panel:#fff;--panel2:#f2f2f2;--ink:#111;--dim:#555;--accent:#000;--on-accent:#fff;--warn:#a00;--ok:#060;--wary:#850;--line:#bbb;--glowc:transparent;--head-glow:none;color-scheme:light}
+  html body{background:#fff!important;background-image:none!important;padding:0}
+  .topbar,.console,.tabs,.toolbar{display:none!important}
+  .app{display:block}
+  .display,.panel{border:0!important;box-shadow:none!important;clip-path:none!important;background:#fff}
+  .display.crt::after{display:none}
+  .stage{padding:0;min-height:0}
+  .doc{max-width:none;text-shadow:none}
+  .tag,.banner,.statement,.pips i.on{print-color-adjust:exact;-webkit-print-color-adjust:exact}
+  .card,.sec{break-inside:avoid}
+  .radarbox{position:static}
+  .rm{display:none}
+  [data-style="gms"] .banner,[data-style="ha"] .banner{background:none;color:var(--warn)}
+  [data-style="gms"] .banner small,[data-style="ha"] .banner small{color:var(--warn)}
+}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <div class="brand">Briefing Terminal<small id="brandSub">Paste field notes. Get an operations order.</small></div>
+</div>
+
+<main class="app">
+  <aside class="panel console" id="console">
+    <h2>Source text</h2>
+    <div class="field">
+      <textarea id="src" class="in" spellcheck="false" aria-label="Source text"></textarea>
+      <p class="hint">Loaded from briefing.txt when the page opens. Put CLASSIFICATION, OPERATION, FROM and TO lines at the top, then a --- line, to set the Header fields. Plain prose works. Headings such as SITUATION, MISSION, THREATS, FACTIONS, PERSONS or LOCATIONS sort the text more precisely. Under PERSONS, FACTIONS and LOCATIONS, start each entry with <i>Name -- description</i> (a blank line between entries). Edits here last until you reload.</p>
+    </div>
+    <div class="row">
+      <button id="go" class="btn">Generate briefing</button>
+      <button id="sample" class="btn ghost">Sample</button>
+      <button id="clear" class="btn ghost">Clear</button>
+      <label class="btn ghost" for="pick" style="cursor:pointer">Open .txt</label><input type="file" id="pick" accept=".txt,text/plain" hidden>
+    </div>
+
+    <details class="opt">
+      <summary>Style</summary>
+      <div class="body">
+  <div class="stylewrap" style="display:grid;gap:12px">
+    <div class="styles" role="group" aria-label="Manufacturer house">
+      <span class="lbl">House</span>
+      <button class="chip" data-style="gms" aria-pressed="false" title="General Massive Systems: standardized, universal, institutional">GMS</button>
+      <button class="chip" data-style="ipsn" aria-pressed="false" title="Interplanetary Shipping-Northstar: rugged, hazard-taped, built to last">IPS-N</button>
+      <button class="chip" data-style="ssc" aria-pressed="false" title="Smith-Shimano Corpro: polished, premium, omninet-native">SSC</button>
+      <button class="chip" data-style="horus" aria-pressed="false" title="HORUS: decentralized, uncanny, split-channel">HORUS</button>
+      <button class="chip" data-style="ha" aria-pressed="false" title="Harrison Armory: assertive, imperial, armed">Harrison</button>
+    </div>
+    <div class="styles" role="group" aria-label="Display style">
+      <span class="lbl">Display</span>
+      <button class="chip" data-style="holo" aria-pressed="true">Holo</button>
+      <button class="chip" data-style="fleet" aria-pressed="false">Fleet</button>
+      <button class="chip" data-style="amber" aria-pressed="false">Amber CRT</button>
+      <button class="chip" data-style="green" aria-pressed="false">Green CRT</button>
+      <button class="chip" data-style="paper" aria-pressed="false">Dossier</button>
+    </div>
+  </div>
+
+      </div>
+    </details>
+
+    <details class="opt" open>
+      <summary>Header</summary>
+      <div class="body">
+        <div class="field"><label for="classif">Classification</label>
+          <select id="classif" class="in">
+            <option>UNCLASSIFIED</option><option>RESTRICTED</option><option>SECRET</option><option selected>TOP SECRET</option>
+          </select></div>
+        <div class="field"><label for="opName">Operation name</label>
+          <input id="opName" class="in" placeholder="Auto-generated"></div>
+        <div class="field"><label for="issuer">From</label>
+          <input id="issuer" class="in" value="Fleet Intelligence Command"></div>
+        <div class="field"><label for="recipient">To</label>
+          <input id="recipient" class="in" value="Strike Team Leaders"></div>
+      </div>
+    </details>
+
+    <details class="opt">
+      <summary>Track extra names</summary>
+      <div class="body">
+        <p class="hint">Names without a title (Captain, Dr., Agent) or groups without a word like Guild or Syndicate can be missed. List them here, one per line, to force them into the tabs.</p>
+        <div class="field"><label for="xPersons">Persons</label>
+          <textarea id="xPersons" class="in" style="min-height:70px" spellcheck="false"></textarea></div>
+        <div class="field"><label for="xFacs">Factions</label>
+          <textarea id="xFacs" class="in" style="min-height:70px" spellcheck="false"></textarea></div>
+        <div class="field"><label for="xLocs">Locations</label>
+          <textarea id="xLocs" class="in" style="min-height:70px" spellcheck="false"></textarea></div>
+      </div>
+    </details>
+
+    <details class="opt">
+      <summary>Display options</summary>
+      <div class="body">
+        <div class="two">
+          <div class="field"><label for="optFont">Typeface</label>
+            <select id="optFont" class="in"><option value="theme">House default</option><option value="mono">Monospace</option><option value="sans">Plain sans</option><option value="serif">Serif</option></select></div>
+          <div class="field"><label for="optDensity">Density</label>
+            <select id="optDensity" class="in"><option value="comfortable">Comfortable</option><option value="compact">Compact</option></select></div>
+        </div>
+        <label class="check"><input type="checkbox" id="optScan" checked> Scanlines</label>
+        <label class="check"><input type="checkbox" id="optGlow" checked> Glow and split-channel text</label>
+        <label class="check"><input type="checkbox" id="optCut" checked> Cut corners on panels</label>
+        <label class="check"><input type="checkbox" id="optTex" checked> Background texture</label>
+        <label class="check"><input type="checkbox" id="optBoot" checked> Decrypt sequence</label>
+        <label class="check"><input type="checkbox" id="optRedact"> Redact names (click a bar to reveal)</label>
+        <div class="field"><label for="optSize">Text size</label>
+          <input type="range" id="optSize" min="14" max="26" step="1" value="17"></div>
+        <button class="btn ghost" id="resetLook" type="button">Reset look to house defaults</button>
+      </div>
+    </details>
+  </aside>
+
+  <section class="display crt" id="display" aria-label="Briefing display">
+    <div class="tabs" role="tablist" id="tabs">
+      <button class="tab" role="tab" id="t-brief" aria-selected="true" aria-controls="stage" data-tab="brief">Briefing</button>
+      <button class="tab" role="tab" id="t-persons" aria-selected="false" aria-controls="stage" data-tab="persons">Persons <span class="n" id="n-persons">0</span></button>
+      <button class="tab" role="tab" id="t-factions" aria-selected="false" aria-controls="stage" data-tab="factions">Factions <span class="n" id="n-facs">0</span></button>
+      <button class="tab" role="tab" id="t-locs" aria-selected="false" aria-controls="stage" data-tab="locs">Locations <span class="n" id="n-locs">0</span></button>
+      <button class="tab" role="tab" id="t-objs" aria-selected="false" aria-controls="stage" data-tab="objs">Objectives <span class="n" id="n-objs">0</span></button>
+      <button class="tab" role="tab" id="t-codex" aria-selected="false" aria-controls="stage" data-tab="codex">Codex <span class="n" id="n-codex">0</span></button>
+    </div>
+    <div class="stage" id="stage" role="tabpanel" tabindex="0"></div>
+    <div class="toolbar">
+      <span class="row" style="align-items:center"><button class="btn ghost" id="saveTxt">Save briefing.txt</button><button class="btn ghost" id="reload">Reload briefing.txt</button><button class="btn ghost" id="toggleSrc" aria-controls="console" aria-expanded="true">Hide source</button><span id="status">Ready</span></span>
+      <span class="row"><button class="btn ghost" id="restore" hidden>Restore removed (0)</button><button class="btn ghost" id="reroll">New op name</button><button class="btn ghost" id="print">Print</button><button class="btn ghost" id="copy">Copy as text</button></span>
+    </div>
+  </section>
+</main>
+<script>
+/* ===================== Parser: free text -> briefing model (pure, no DOM) ===================== */
+const escRe=s=>s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+const cap=s=>s.charAt(0).toUpperCase()+s.slice(1);
+const lcfirst=s=>/^[A-Z][a-z]/.test(s)?s.charAt(0).toLowerCase()+s.slice(1):s;
+const hash=s=>{let h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)}return h>>>0};
+const ci=w=>'['+w[0].toUpperCase()+w[0].toLowerCase()+']'+w.slice(1);
+
+/* ---- titles and ranks ---- */
+const TITLE_WORDS=['Fleet Admiral','Vice Admiral','Rear Admiral','Admiral','Commodore','Lieutenant Commander','Captain','Commander','1st Lieutenant','2nd Lieutenant','First Lieutenant','Second Lieutenant','Lieutenant','Ensign','Colonel','General','Major','Master Sergeant','Gunnery Sergeant','Staff Sergeant','Sergeant','Lance Corporal','Corporal','Private','Marshal','Director','Doctor','Professor','Agent','Chief','Warden','Ambassador','Administrator','Envoy','Governor','Senator','Baron','Baroness','Lord','Lady','Emperor','Empress','Queen','King','Prince','Princess','Warlord','Overseer','Inspector','Magistrate','Chancellor','Regent','Archon','Sir','Dame','Sister','Brother','Father','Sheriff','Judge','Consul','Prefect','Quartermaster','Kingpin'];
+const TITLE_ABBR=['SSgt','MSgt','GySgt','1Lt','2Lt','LCpl','Sgt','Cpl','Pvt','Capt','Cmdr','Cdr','Lt','Col','Gen','Maj','Adm','Prof','Amb','Dr','Mr','Mrs','Ms'];
+const TITLE_SET=new Set(TITLE_WORDS.map(w=>w.split(' ').pop().toLowerCase()).concat(TITLE_ABBR.map(s=>s.toLowerCase())));
+const TITLE_ALT='(?:'+[...TITLE_WORDS].sort((a,b)=>b.length-a.length).map(ci).join('|')+'|(?:'+[...TITLE_ABBR].sort((a,b)=>b.length-a.length).join('|')+')\\.?)';
+const ABBR_OF={'staff sergeant':['SSgt'],'master sergeant':['MSgt'],'gunnery sergeant':['GySgt'],'sergeant':['Sgt'],'captain':['Capt'],'lieutenant':['Lt'],'1st lieutenant':['1Lt'],'2nd lieutenant':['2Lt'],'commander':['Cmdr','Cdr'],'colonel':['Col'],'major':['Maj'],'general':['Gen'],'admiral':['Adm'],'doctor':['Dr'],'professor':['Prof'],'corporal':['Cpl'],'lance corporal':['LCpl'],'private':['Pvt'],'ambassador':['Amb']};
+const NAME_TOKEN='(?:\\p{Lu}[\\p{L}\'’\\-]*|"[^"\\n]{2,24}"|“[^”\\n]{2,24}”)';
+const PERSON_RE=new RegExp('\\b('+TITLE_ALT+')\\s+('+NAME_TOKEN+'(?:\\s+'+NAME_TOKEN+'){0,2})','gu');
+const ORG_PREFIX_RE=new RegExp('^((?:[A-Z]{2,5}|Union)(?:\\s+(?:[A-Z]{2,5}|Union))*)\\s+(?='+TITLE_ALT+'\\s)','u');
+
+/* ---- locations ---- */
+const LOC_TYPES=['Docking Ring','Station','Outpost','Moon','Planet','Sector','System','Orbit','Colony','Base','Nebula','Belt','Asteroid','Cluster','Gate','Array','Habitat','Complex','Facility','Port','Docks','Dock','Ring','Hub','Relay','Fortress','Citadel','Spire','Rift','Wreck','Derelict','Vault','Mine','Refinery','Platform','Shipyard','Starport','Spaceport','Reach','Expanse','Void','Drift','Haven','Prime','Terminal','Hangar','Laboratory','Lab','Cruiser','Dreadnought','Frigate','Carrier','Freighter','Corvette','Destroyer','Vessel','Observatory','Depot','Bunker','Archive','Foundry','Reactor','City','Line','Archipelago','Island','Islands','Continent','Harbor','Harbour','Landing','Keep','Tower'];
+const REGION_TYPES=['Line','Sector','System','Expanse','Reach','Belt','Rift','Void','Drift','Cluster','Nebula','Region','Archipelago','Continent'];
+const SHIP_TYPES=['Vessel','Freighter','Cruiser','Frigate','Carrier','Corvette','Destroyer','Dreadnought','Shuttle','Ship','Barge','Skiff','Yacht'];
+const PLANET_TYPES=['Planet','Prime','Moon','World'];
+const LOC_TYPE_ALT=[...LOC_TYPES].sort((a,b)=>b.length-a.length).join('|');
+const CAPW='\\p{Lu}[\\p{L}\'’\\-]*';
+const SHIP_PREFIX='(?:ISS|UES|USS|CSV|HMS|UNS|MCRN|RSS|ISV|TSS|UAS|UFS)';
+const VESSEL_PRE=new RegExp('^'+SHIP_PREFIX+'(?:-[A-Z]{1,3})?\\s+','u');
+const LOC_B=new RegExp('\\b((?:'+CAPW+'\\s+){1,2}(?:'+LOC_TYPE_ALT+')(?:\\s+\\d+[A-Za-z]?)?)(?![\\p{L}])','gu');
+const LOC_A=new RegExp('\\b((?:Sector|System|Station|Moon|Planet|Colony|Outpost|Base|Gate|Habitat|Port|Starbase|Deck|Level)\\s+(?:of\\s+)?(?:'+CAPW+'|\\d+[A-Za-z]?)(?:\\s+(?:\\d+|'+CAPW+'))?)','gu');
+const LOC_C=new RegExp('\\b(?:freighter|cruiser|frigate|carrier|corvette|destroyer|shuttle|vessel|ship|dreadnought|barge|skiff|yacht|station|outpost|colony|moon|planet|world|asteroid|habitat|base|city|port|ark|continent|island)\\s+(?:the\\s+|of\\s+)?('+CAPW+'(?:\\s+'+CAPW+')?)','gu');
+const LOC_D=new RegExp('\\b('+SHIP_PREFIX+'(?:-[A-Z]{1,3})?\\s+'+CAPW+'(?:\\s+'+CAPW+')?)','gu');
+const LOC_E=new RegExp('\\b(?:aboard|orbiting|toward|towards|near|from|at|in|on|into|to|above|beyond|along|within|across|throughout|via)\\s+(?:the\\s+)?('+CAPW+'(?:\\s+'+CAPW+')?)','gu');
+const LOC_F=new RegExp('\\b(?:liberation|defen[cs]e|siege|battle|fall|occupation|evacuation|recapture|conquest|invasion|bombardment|blockade|capture) of\\s+(?:the\\s+)?('+CAPW+'(?:\\s+'+CAPW+')?)','gu');
+const STOP=new Set('the this that these those their your our his her its they there then when where while with without after before during monday tuesday wednesday thursday friday saturday sunday january february march april may june july august september october november december command control security authority director fleet navy empire federation alliance union guild cartel corporation council order company clan legion collective republic coalition crew syndicate team squad party you we i he she it if as but and or not no yes all any each one two three four five six seven eight nine ten god lancer diasporan stay under despite now like during since'.split(' '));
+const HAZARDS=/\b(radiation|hostile|guarded|patrol(?:s|led)?|vacuum|derelict|storm|lockdown|minefield|mines|quarantine|unstable|toxic|pirates?|piracy|anomal(?:y|ies)|debris|blockade|decompression|plague|infested|sealed|cloaked|booby-?trapped|turrets?|drones?|armed|raiders?|flooded|burning|collapsing|contaminated|radioactive|anti-satellite|orbit-to-surface strikes?|assassinations?|coercive interference)\b/gi;
+
+/* ---- threat, stance, objective vocabulary ---- */
+const STRONG_THREAT=/\b(enemy|enemies|hostile|armed|ambush|hostages?|raiders?|pirates?|piracy|mercenar\w+|cultists?|insurgen\w+|terror\w*|assassinat\w+|sabotage\w*|lockdown|blockade|turrets?|minefield|traps?|booby-?trapped|lethal|kill\w*|attack\w*|invad\w+|seiz\w+|captives?|infected|xeno\w*|marauding)\b/gi;
+const WEAK_THREAT=/\b(threat|danger(?:ous)?|tension\w*|war|warfare|skirmish\w*|coup|hardline|unstable|toxic|radiation|drones?|weapons?|shields?|armou?red|guards?|patrols?|defen[cs]es?|raid\w*|rebels?|soldiers?|coercive|vengeful|strike capabilit\w+)\b/gi;
+const threatScore=s=>2*(s.match(STRONG_THREAT)||[]).length+(s.match(WEAK_THREAT)||[]).length;
+const S_HOSTILE=/\b(seiz\w+|hostages?|enemy|enemies|hostile|traitor|rebel|pirates?|piracy|smuggler|warlord|villain|cultists?|mercenary|wanted|criminal|rogue|betray\w*|terror\w*|antagonist|tyrant|despot|usurper|renegade|raiders?)\b/gi;
+const SOFT_HOSTILE=/\b(oppressive|expansionis\w+|authoritarian|hardline|nationalis\w+|anthrochauvinis\w+|assassinat\w+|coercive|vengeful|marauding|cold war|warfare|skirmish\w*|tensions?|tense|instability|prosecution|power struggles?|aggressive|militaris\w+|hegemon\w+)\b/gi;
+const WARY_RE=/\b(distrust\w*|suspicious|wary|isolationist|guarded|reluctant)\b/gi;
+const TRUST_RE=/cannot be (?:fully )?trusted|can't be trusted|not to be trusted/gi;
+const ALLY_STRONG=/\b(receptive|friendly|welcom\w+|loyal|allies|allied|ally|defector|informant|sympathetic|rescued?)\b/gi;
+const ALLY_SOFT=/\b(host|hosted|hosts|cooperat\w+|support(?:s|ed|ing)?|suppl(?:y|ies)|provide[sd]?|assist\w*|client|patron|employer|asset|handler|member state|respect(?:ed)?|capable|confident)\b/gi;
+const LOGI_RE=/\b(equip\w*|suppl(?:y|ies)|shuttles?|fuel|armou?r|ammunition|gear|support|backup|reinforc\w+|extraction|pick-?up|rendezvous|budget|credits|payment|reward|deadline|window|comms?|frequency|channel|resources?|codes?|fire support|hold at)\b/i;
+const OBJ_VERBS=['secure','retrieve','destroy','extract','locate','escort','infiltrate','disable','rescue','capture','investigate','eliminate','recover','protect','establish','deliver','neutrali[sz]e','sabotage','find','stop','prevent','defend','scout','acquire','steal','intercept','board','breach','disrupt','contain','evacuate','negotiate','plant','hold','retake','reach','report','survive','identify','obtain','shadow','assassinate','free','liberate','deactivate','repair','restore','transport','meet','track','hunt','seize','activate','collect','gather','enter','ensure','search','sweep','clear','kill','shut down','take','disarm','decrypt','download','hack','smuggle','make sure','get','bring','eradicate','arrest','interrogate','survey','map','salvage','launch','assist','monitor','coordinate','mediate','guard','patrol','verify','confirm'];
+const VERB_ALT='(?:'+OBJ_VERBS.join('|')+')';
+const OBJ_RE=new RegExp('\\b(your (?:team|party|squad|crew|mission|objective|task|goal|assignment|orders?|role|duty|duties|job|charge)|objectives?|(?:you|team|party|crew|squad|agents?|they|lancers?) (?:must|will|are to|need to|needs to|should|have to|has to|is to)|must|ordered to|tasked|primary goal|mission is)\\b|^'+VERB_ALT+'\\b','i');
+const RESTR_RE=/^(?:do not|don't|never|avoid|under no circumstances|no one|nobody)\b|\bunless (?:fired|attacked|provoked)\b/i;
+const SECOND_RE=/(if possible|if you can|optionally|optional|bonus|secondary|if time|time permitting|ideally|preferably|if the opportunity)/i;
+const LEAD=[/^your (?:objective|mission|task|goal)s? (?:is|are) (?:to\s+)?/i,/^your (?:assignment|orders?|role|duty|job)\s+(?:is|are)\s+(?:to\s+)?/i,/^(?:objective|mission|goal|task)\s*[:\-]\s*/i,/^you\s+(?:must|will|are to|need to|should|have to)\s+/i,/^(?:your )?(?:team|party|squad|crew)\s+(?:must|will|needs? to|are to|should|has to|have to)\s+/i,/^(?:must|will|needs? to|should)\s+/i];
+const SPLIT_RE=new RegExp('\\s*(?:;|,\\s*and\\s+|\\s+and\\s+)(?='+VERB_ALT+'\\b)','i');
+const HOSTILE_PERSON_RE=S_HOSTILE;
+
+/* ---- mission profile ---- */
+const PROFILES=[['Diplomatic',/\b(diplomat\w*|ambassad\w+|negotiat\w+|summit|treaty|accords?|envoy|delegat\w+)\b/gi],['Escort',/\bescort\w*/gi],['Security',/\b(security|protect\w*|guard\w*|bodyguard\w*)\b/gi],['Recon',/\b(recon\w*|scout\w*|surveillance|reconnaissance)\b/gi],['Strike',/\b(strike|assault|raid|destroy|eliminate|neutrali[sz]e)\b/gi],['Rescue',/\b(rescue|hostages?|evacuat\w+)\b/gi],['Salvage',/\b(salvage|recover|retriev\w+|extract)\b/gi],['Infiltration',/\b(infiltrat\w+|covert|stealth|undercover)\b/gi],['Anti-piracy',/\b(pirat\w+|piracy|raiders?)\b/gi]];
+
+/* ---- sentence and block helpers ---- */
+const ABBR_RE=new RegExp('\\b('+TITLE_ABBR.join('|')+'|St|vs|etc|pp?|No|Fig)\\.','g');
+function splitSentences(t){
+  return t.replace(ABBR_RE,'$1\u0001')
+    .split(/(?<=[.!?]["”']?)\s+(?=["“'(]?\p{Lu})/u)
+    .map(s=>s.replace(/\u0001/g,'.').trim()).filter(Boolean);
+}
+const BULLET=/^\s*(?:[-*•▪◦–—]|\d+[.)]|[a-zA-Z][.)])\s+(.*)$/;
+function toBlocks(lines){
+  const out=[];let para=[],list=null;
+  const fp=()=>{if(para.length){out.push({type:'p',text:para.join(' ')});para=[]}};
+  const fl=()=>{if(list){out.push({type:'ul',items:list});list=null}};
+  for(const ln of lines){
+    const t=ln.trim();
+    if(!t){fp();fl();continue}
+    const m=t.match(BULLET);
+    if(m){fp();(list=list||[]).push(m[1].trim())}
+    else{fl();para.push(t)}
+  }
+  fp();fl();return out;
+}
+const KNOWN='situation|background|briefing|overview|intel(?:ligence)?|summary|context|premise|backstory|mission|objectives?|goals?|tasks?|orders|threats?|enemy|enemies|opposition|complications?|risks?|obstacles?|support|logistics|assets|equipment|resources|reward|payment|extraction|command|signal|comms|persons?(?: of interest)?|people|key figures|npcs?|characters?|targets?|suspects?|crew|contacts?|factions?|organi[sz]ations?|groups?|locations?|area|terrain|setting|site|environment|destination';
+const KNOWN_RE=new RegExp('^('+KNOWN+')\\s*[:\\-–]\\s*(.*)$','i');
+function clean(s){return s.replace(/[:\s]+$/,'').trim().toUpperCase()}
+function detectHeader(t){
+  if(!t) return null;
+  let m;
+  if((m=t.match(/^#{1,4}\s*(.+?)\s*#*$/))) return {title:clean(m[1]),rest:''};
+  if((m=t.match(/^\*\*(.{2,40}?)\*\*:?\s*(.*)$/))) return {title:clean(m[1]),rest:m[2]};
+  if((m=t.match(KNOWN_RE))) return {title:clean(m[1]),rest:m[2]};
+  if(/^[A-Z0-9][A-Z0-9 &\/'’\-]{2,40}:?$/.test(t)&&/[A-Z]{3}/.test(t)&&!/^\d/.test(t)) return {title:clean(t),rest:''};
+  if(/^[^.!?]{2,40}:$/.test(t)&&!BULLET.test(t)) return {title:clean(t),rest:''};
+  return null;
+}
+function bucketOf(title){
+  const t=title.toLowerCase();
+  if(/faction|organi[sz]ation|allegiance|affiliation|groups?|gangs?|guilds?|cartels?|clans?|powers?/.test(t)) return 'factions';
+  if(/person|people|key figure|npc|character|suspect|crew|who|dramatis|cast|contacts?|targets?/.test(t)) return 'persons';
+  if(/location|area|terrain|setting|site|environment|destination|where|map/.test(t)) return 'locations';
+  if(/mission|objective|goal|task|order|directive|aim/.test(t)) return 'objectives';
+  if(/threat|enem|oppos|hostile|danger|adversar|complication|risk|obstacle|villain/.test(t)) return 'threat';
+  if(/support|logistic|asset|equip|resource|reward|payment|supply|supplies|gear|loot/.test(t)) return 'logistics';
+  if(/extract|command|signal|comm|rendezvous|report/.test(t)) return 'command';
+  if(/situation|background|brief|overview|intel|summary|context|premise|hook|story|backstory/.test(t)) return 'situation';
+  return 'custom';
+}
+function classify(s){
+  if(RESTR_RE.test(s)||OBJ_RE.test(s)) return 'objectives';
+  if(threatScore(s)>=2) return 'threat';
+  if(LOGI_RE.test(s)) return 'logistics';
+  return 'situation';
+}
+
+/* ---- entity sections: "Name -- description" entries ---- */
+const ENTRY_DASH=/^\s*(.{2,80}?)\s+(?:--+|—|–|-)\s+(\S.*)$/;
+const ENTRY_VERB=/^\s*(?:The\s+)?((?:[\p{Lu}\d][\p{L}\d'’\-]*\s+){0,4}[\p{Lu}\d][\p{L}\d'’\-]*)\s+(?:is|are|was|were|has|have|serves|stands|sits|lies|orbits)\b/u;
+function parseEntries(lines,prefix){
+  const entries=[];let cur=null,prevBlank=true;
+  for(const ln of lines){
+    const t=ln.trim();
+    if(!t){prevBlank=true;continue}
+    const bm=t.match(BULLET);
+    const body=bm?bm[1]:t;
+    let m=null;
+    if(prevBlank||bm){
+      const d=body.match(ENTRY_DASH);
+      if(d&&d[1].trim().split(/\s+/).length<=9&&!/[!?;]|\.\s+\p{Lu}/u.test(d[1])) m={name:d[1].trim(),desc:d[2]};
+      else if(!bm&&prevBlank){const v=body.match(ENTRY_VERB);if(v) m={name:v[1].trim(),desc:body}}
+    }
+    if(m){cur={name:m.name,lines:[m.desc],key:prefix+':'+m.name.toLowerCase()};entries.push(cur)}
+    else if(cur) cur.lines.push(body);
+    prevBlank=false;
+  }
+  for(const e of entries) e.desc=e.lines.join(' ').replace(/\s+/g,' ').trim();
+  return entries;
+}
+function parseNameField(raw,allowRole){
+  let name=raw.trim().replace(/^[-*•\s]+/,'');
+  const alias=[];
+  name=name.replace(/\s*\(([^)]{2,14})\)\s*$/,(_,a)=>{alias.push(a.trim());return ''});
+  let role='';
+  if(allowRole){
+    const c=name.match(/^([^,]{2,40}),\s*(.+)$/);
+    if(c&&c[1].trim().split(/\s+/).length<=4){name=c[1].trim();role=c[2].trim()}
+  }
+  name=name.replace(/\s+and\s+(?:other|various|smaller|assorted|several)\b.*$/i,'').replace(/^The\s+/,'').trim();
+  return {name,alias,role};
+}
+function splitName(full){
+  let rest=full.trim(),affil='';
+  const om=rest.match(ORG_PREFIX_RE);
+  if(om){affil=om[1];rest=rest.slice(om[0].length)}
+  const m=rest.match(new RegExp('^('+TITLE_ALT+')\\s+(.+)$','u'));
+  let title=m?m[1]:'';
+  if(title&&TITLE_ABBR.includes(cap(title.replace(/\.$/,'')))&&!title.endsWith('.')) title+='.';
+  const bare=(m?m[2]:rest).replace(/['’]s?$/,'');
+  const plain=bare.replace(/[\"“”][^\"“”]*[\"“”]/g,' ').trim().split(/\s+/);
+  const last=plain[plain.length-1]||bare;
+  const first=plain.length>1?plain[0]:'';
+  const nick=(bare.match(/[\"“]([^\"”]+)[\"”]/)||[])[1];
+  return {title:title?cap(title):'',affil,bare,last,first,nick};
+}
+
+/* ---- Lancer setting lexicon ---- */
+const LEX_FACS=[
+  {name:'Union',keys:['Union'],type:'Government',stance:'ALLIED',side:'union',note:'The interstellar government. Run by the Third Committee.'},
+  {name:'Union Navy',keys:['Union Navy','Union Navy Department','UND'],type:'Military',stance:'ALLIED',side:'union',note:'Union’s naval service. Orders and personnel may carry the UND tag.'},
+  {name:'Union Administrative Department',keys:['Union Administrative Department','UAD'],type:'Department',stance:'ALLIED',side:'union',note:'Handles diplomacy, recontact and reintegration missions. Assigns administrators and ambassadors.'},
+  {name:'Department of Justice and Human Rights',keys:['Department of Justice and Human Rights','DoJ/HR','DoJ'],type:'Department',stance:'ALLIED',side:'union',note:'Union’s justice and rights department. Can field task forces.'},
+  {name:'Third Committee',keys:['Third Committee','ThirdComm'],type:'Government',stance:'ALLIED',side:'union',note:'The governing committee of Union since the revolution against the Second Committee.'},
+  {name:'Second Committee',keys:['Second Committee','SecComm'],type:'Government',stance:'DEFUNCT',note:'Union’s former governing committee. Anthrochauvinistic; collapsed in civil war.'},
+  {name:'SecComm Loyalists',keys:['SecComm Loyalists','Loyalists'],type:'Remnant',stance:'WARY',note:'Supporters of the Second Committee who fled Union after its collapse.'},
+  {name:'General Massive Systems',keys:['General Massive Systems','GMS'],type:'Manufacturer',stance:'NEUTRAL',note:'Union-nationalized corpro. Standardized, universally licensed frames.'},
+  {name:'Interplanetary Shipping-Northstar',keys:['Interplanetary Shipping-Northstar','IPS-Northstar','IPS-N'],type:'Manufacturer',stance:'NEUTRAL',note:'Oldest of the corpro-states. Shipping and zero-g specialists; rugged, long-lived frames.'},
+  {name:'Smith-Shimano Corpro',keys:['Smith-Shimano Corpro','SSC'],type:'Manufacturer',stance:'NEUTRAL',note:'Corpro-state with a dominant omninet presence.'},
+  {name:'HORUS',keys:['HORUS'],type:'Network',stance:'NEUTRAL',note:'Decentralized network of omninet personalities and cells. Publishes schematics and software.'},
+  {name:'Harrison Armory',keys:['Harrison Armory'],type:'Manufacturer',stance:'NEUTRAL',note:'Premier weapons maker and an expansionist corpro-state.'},
+  {name:'Karrakin Trade Baronies',keys:['Karrakin Trade Baronies','Karrakin'],type:'Power bloc',stance:'NEUTRAL',note:'An independent power bloc outside Union.'}
+];
+const LEX_TERMS=[
+  {name:'NHP',cat:'Setting term',keys:['NHPs','NHP','non-human person','non-human persons'],def:'Non-human person. An advanced AI treated as a person with its own personality and quirks, not as a tool.'},
+  {name:'Omninet',cat:'Setting term',keys:['omninet'],def:'The interstellar information network. Local infrastructure can be cut or scuttled.'},
+  {name:'Blinkgate',cat:'Setting term',keys:['blinkgates','blinkgate'],def:'Gate infrastructure used for interstellar travel.'},
+  {name:'Lancer',cat:'Setting term',keys:['Lancers','Lancer'],def:'A licensed mech pilot working under Union. The player characters.'},
+  {name:'Mech',cat:'Setting term',keys:['mechs','mech','chassis'],def:'A piloted combat frame. Naval variants carry external packs for power, thrust and armor.'},
+  {name:'Diasporan',cat:'Setting term',keys:['Diasporan','Diaspora'],def:'Describes human societies outside Union.'},
+  {name:'Anthrochauvinism',cat:'Setting term',keys:['neo-anthrochauvinist','anthrochauvinistic','anthrochauvinism','anthrochauvinist'],def:'Human-supremacist ideology, associated with the Second Committee.'},
+  {name:'Time dilation',cat:'Setting term',keys:['time-dilating','time dilation','time-dilation'],def:'Extended near-light travel makes crews age differently from the worlds they left. Briefings may quote subjective years.'}
+];
+const FAC_WORDS=['Syndicate','Fleet','Empire','Federation','Alliance','Union','Guild','Cartel','Corporation','Council','Order','Company','Clan','Legion','Collective','Republic','Coalition','Navy','Brotherhood','Consortium','Hegemony','Dominion','Covenant','Directorate','Combine','Cult','Pact','Confederacy','Assembly','Concord','Corps','Militia','Cabal','Remnant','Armada','Brigade','Sisterhood','Dynasty','Congregation','Network','Tribunal','Cooperative','Sovereignty','Committee','Department','Authority','Administration','Bureau','Agency','Ministry','Commonwealth','Kingdom','Principality','Marines'];
+const FW=FAC_WORDS.join('|');
+const FAC_A=new RegExp('\\b((?:'+CAPW+'\\s+){1,3}(?:'+FW+'))(?![\\p{L}])','gu');
+const FAC_B=new RegExp('\\b((?:'+FW+')\\s+of\\s+(?:the\\s+)?'+CAPW+'(?:\\s+'+CAPW+'){0,2})','gu');
+const FAC_C=new RegExp('\\b[Tt]he\\s+('+FW+')(?![\\p{L}])(?!\\s+of\\b)','gu');
+const FAC_F=new RegExp('\\b('+CAPW+'(?:\\s+'+CAPW+')?)\\s+(?:pirate|raider|mercenary|criminal|smuggler|bandit)\\s+(clan|band|fleet|gang|syndicate|cartel|crew|company|guild)\\b','gu');
+const EVENT_RE=new RegExp('\\b((?:'+CAPW+'\\s+){1,3}(?:Period|War|Wars|Dispute|Years|Rebellion|Revolution|Era|Age|Crisis|Campaign|Siege|Treaty|Accords?|Incident|Uprising|Collapse|Expansion|Conflict|Offensive|Truce|Armistice))(?![\\p{L}])','gu');
+const CLASS_RE=/\b(\p{Lu}\p{L}+)[- ]class\b/gu;
+const CLASS_SKIP=new Set(['First','Second','Third','Upper','Middle','Lower','World','Business','Working','Ruling','Top','High','Low','Same','Warrior']);
+const LEADART=/^(?:The|A|An|This|That|Their|Your|Our|His|Her|Its|In|On|At|Of|To|From|After|Before|When|While|With|By)\s+/;
+
+function lexRe(keys,cs,g){
+  return new RegExp('(?<![\\p{L}\\d])(?:'+[...keys].sort((a,b)=>b.length-a.length).map(escRe).join('|')+')(?![\\p{L}\\d])',(g?'g':'')+(cs?'u':'iu'));
+}
+/* One regex over every key of every entity. Keys without capitals match any case. */
+function makeIndex(ents,quiet){
+  const map=new Map();
+  for(const e of ents){
+    const ks=quiet?[...e.keys,...(e.qkeys||[])]:e.keys;
+    for(const k of ks){
+      if(!k||k.length<3) continue;
+      const lk=k.toLowerCase();
+      if(!map.has(lk)) map.set(lk,{e,orig:k,cs:e.cs!==false&&/[\p{Lu}\d]/u.test(k)});
+    }
+  }
+  const keys=[...map.keys()].sort((a,b)=>b.length-a.length).map(escRe);
+  return {map,re:keys.length?new RegExp('(?<![\\p{L}\\d])(?:'+keys.join('|')+')(?![\\p{L}\\d])','giu'):null};
+}
+function scanText(idx,s){
+  const found=new Set();
+  if(!idx.re) return found;
+  for(const m of s.matchAll(idx.re)){
+    const info=idx.map.get(m[0].toLowerCase());
+    if(info&&(!info.cs||m[0]===info.orig)) found.add(info.e);
+  }
+  return found;
+}
+function mentionsIn(idx,s){
+  const out=[];
+  if(!idx.re) return out;
+  for(const m of s.matchAll(idx.re)){
+    const info=idx.map.get(m[0].toLowerCase());
+    if(info&&(!info.cs||m[0]===info.orig)) out.push({e:info.e,start:m.index,end:m.index+m[0].length});
+  }
+  return out;
+}
+function stanceOf(blob,fixed){
+  const n=re=>(blob.match(re)||[]).length;
+  const sh=n(S_HOSTILE),so=n(SOFT_HOSTILE),wr=n(WARY_RE),tr=n(TRUST_RE);
+  const good=2*n(ALLY_STRONG)+n(ALLY_SOFT);
+  const bad=sh*2+so*.5+wr+tr*2;
+  let status;
+  if(sh&&good<sh*2) status='HOSTILE';
+  else if(sh) status='UNCERTAIN';
+  else if(bad>=1&&good) status=bad>=good*2?'WARY':good>=bad*2?'ALLIED':'UNCERTAIN';
+  else if(bad>=1) status='WARY';
+  else if(good) status='ALLIED';
+  else status='UNKNOWN';
+  if(fixed) status=fixed;
+  let threat=['ALLIED','NEUTRAL','DEFUNCT'].includes(status)?0:Math.min(5,Math.round(sh*1.5+bad*.7));
+  if(fixed==='WARY') threat=Math.max(threat,2);
+  return {status,threat,sh,bad,good,tr};
+}
+
+function analyze(raw,extras){
+  const text=(raw||'').replace(/\r/g,'').trim();
+  const model={situation:[],threat:[],logistics:[],command:[],custom:[],objectives:[],persons:[],factions:[],locations:[],codex:[],hazards:[],profile:[],empty:!text};
+  if(!text) return model;
+  extras=extras||{};
+
+  /* 1. sections, entity entries, sentences */
+  const secs=[{kind:null,lines:[]}];
+  for(const ln of text.split('\n')){
+    const h=detectHeader(ln.trim());
+    if(h) secs.push({kind:bucketOf(h.title),title:h.title,lines:h.rest?[h.rest]:[]});
+    else secs[secs.length-1].lines.push(ln);
+  }
+  const seeds={persons:[],factions:[],locations:[]};
+  const KIND_PREFIX={persons:'p',factions:'f',locations:'l'};
+  const sents=[],objs=[];
+  const addS=(t,owner)=>{t=(t||'').trim();if(t) sents.push({t,owner:owner||null})};
+  const addObjective=r=>{
+    let t=r.trim().replace(/[.]+$/,'');
+    if(!t) return;
+    const restr=RESTR_RE.test(t);
+    const pri=restr?'RESTRICTION':SECOND_RE.test(t)?'SECONDARY':'PRIMARY';
+    for(const re of LEAD){if(re.test(t)){t=t.replace(re,'');break}}
+    const parts=restr?[t]:t.split(SPLIT_RE);
+    for(const p of parts) if(p.trim()) objs.push({text:cap(p.trim()),pri});
+  };
+  let firstBlock=true;
+  for(const s of secs){
+    if(KIND_PREFIX[s.kind]){
+      for(const e of parseEntries(s.lines,KIND_PREFIX[s.kind])){
+        seeds[s.kind].push(e);
+        splitSentences(e.desc).forEach(x=>addS(x,e.key));
+      }
+      continue;
+    }
+    const blocks=toBlocks(s.lines);
+    for(const b of blocks) (b.type==='ul'?b.items:splitSentences(b.text)).forEach(x=>addS(x));
+    if(s.kind==='objectives'){
+      for(const b of blocks){(b.type==='ul'?b.items:splitSentences(b.text)).forEach(addObjective)}
+      continue;
+    }
+    if(s.kind==='custom'){model.custom.push({title:s.title,blocks});continue}
+    if(s.kind){model[s.kind].push(...blocks);continue}
+    let runB=null,run=[];
+    const flush=()=>{if(run.length)model[runB].push({type:'p',text:run.join(' ')});run=[]};
+    for(const b of blocks){
+      const items=b.type==='ul'?b.items:splitSentences(b.text);
+      const opener=firstBlock;firstBlock=false;
+      for(const it of items){
+        const bk=opener?((RESTR_RE.test(it)||OBJ_RE.test(it))?'objectives':'situation'):classify(it);
+        if(bk==='objectives'){flush();runB=null;addObjective(it);continue}
+        if(bk!==runB){flush();runB=bk}
+        run.push(it);
+      }
+      flush();runB=null;
+    }
+  }
+
+  /* 2. lexicon factions; mask them so the generic patterns do not re-read them as people or places */
+  let masked=text;
+  const facs=[];
+  const addFac=(name,o)=>{
+    o=o||{};
+    name=name.replace(/\s+/g,' ').replace(LEADART,'').replace(/['’]s$/,'').trim();
+    if(name.length<3) return null;
+    const toks=name.split(/\s+/);
+    if(TITLE_SET.has(toks[0].toLowerCase())) return null;
+    const lk=name.toLowerCase(),al=(o.alias||[]).map(a=>a.toLowerCase());
+    const ex=facs.find(f=>f.keys.some(k=>{const kl=k.toLowerCase();return kl===lk||al.includes(kl)}));
+    if(ex){
+      if(o.desc) ex.desc=ex.desc?ex.desc+' '+o.desc:o.desc;
+      (o.alias||[]).forEach(a=>{if(!ex.keys.includes(a)) ex.keys.push(a)});
+      if(o.oid) ex.oids.add(o.oid);
+      return ex;
+    }
+    const tw=toks.find(w=>FAC_WORDS.includes(cap(w)));
+    const f={t:'f',id:'f'+facs.length,name,type:o.type||(tw?cap(tw):'Faction'),desc:o.desc||'',note:o.note||'',fixed:o.stance||'',side:o.side||'',lex:!!o.lex,keys:[name,...(o.alias||[])],oids:new Set(o.oid?[o.oid]:[])};
+    facs.push(f);return f;
+  };
+  const hitDefs=LEX_FACS.filter(d=>lexRe(d.keys,true).test(text));
+  for(const d of hitDefs) addFac(d.name,{type:d.type,note:d.note,stance:d.stance,side:d.side,alias:d.keys.filter(k=>k!==d.name),lex:true});
+  if(hitDefs.length) masked=masked.replace(lexRe(hitDefs.flatMap(d=>d.keys),true,true),m=>' '.repeat(m.length));
+
+  /* 3. persons */
+  const people=[];
+  const addPerson=(full,desc,role,oid)=>{
+    full=full.replace(/['’]s?$/,'').replace(/[.,;:]+$/,'').trim();
+    if(full.length<2) return;
+    const sp=splitName(full);
+    if(!sp.last||sp.last.length<2) return;
+    const lastKey=sp.last.toLowerCase();
+    let p=people.find(x=>x.last.toLowerCase()===lastKey);
+    if(p){
+      if(full.length>p.full.length) Object.assign(p,sp,{full});
+      if(desc) p.desc=p.desc?p.desc+' '+desc:desc;
+      if(role&&!p.role) p.role=role;
+      if(oid) p.oids.add(oid);
+      return;
+    }
+    people.push({t:'p',id:'p'+people.length,full,desc:desc||'',role:role||'',oids:new Set(oid?[oid]:[]),...sp,name:full});
+  };
+  for(const e of seeds.persons){const nf=parseNameField(e.name,true);addPerson(nf.name,e.desc,nf.role,e.key)}
+  for(const m of masked.matchAll(PERSON_RE)){
+    const nm=m[2].replace(/[.,;:]+$/,'');
+    if(TITLE_SET.has(nm.split(/\s+/)[0].toLowerCase())&&!/\s/.test(nm)) continue;
+    addPerson((m[1]+' '+nm).replace(/^(\p{L})/u,c=>c.toUpperCase()),'','','');
+  }
+  for(const l of (extras.persons||[])) addPerson(l,'','','');
+  const firsts={};
+  people.forEach(p=>{if(p.first) firsts[p.first]=(firsts[p.first]||0)+1});
+  for(const p of people){
+    const ab=[];
+    if(p.title){const t=p.title.replace(/\.$/,'').toLowerCase();(ABBR_OF[t]||[]).forEach(a=>{ab.push(a+'. '+p.last,a+' '+p.last)})}
+    p.keys=[p.full,p.title&&p.bare?p.title+' '+p.bare:'',p.title?p.title+' '+p.last:'',p.bare,p.last,p.nick,
+      p.first&&firsts[p.first]===1&&p.first.length>=4?p.first:'',...ab].filter((k,i,a)=>k&&k.length>=3&&a.indexOf(k)===i);
+    p.name=p.bare;
+  }
+
+  /* 4. more factions: seeds, patterns, extras */
+  for(const e of seeds.factions){const nf=parseNameField(e.name,false);addFac(nf.name,{desc:e.desc,alias:nf.alias,oid:e.key})}
+  for(const re of [FAC_A,FAC_B]) for(const m of masked.matchAll(re)) addFac(m[1]);
+  for(const m of masked.matchAll(FAC_F)) addFac(m[1],{type:cap(m[2])+' (pirate)'});
+  for(const m of masked.matchAll(FAC_C)){const w=m[1];if(!facs.some(f=>f.name.split(/\s+/).some(t=>t.toLowerCase()===w.toLowerCase()))) addFac(w)}
+  for(const l of (extras.factions||[])) addFac(l);
+  const grp=f=>f.oids.size?0:f.lex?2:1;
+  facs.sort((a,b)=>grp(a)-grp(b));
+  facs.forEach((f,i)=>f.id='f'+i);
+  for(const f of facs){
+    const last=f.name.split(/\s+/).pop();
+    const uniq=!f.fixed&&FAC_WORDS.includes(cap(last))&&facs.filter(o=>o.name.split(/\s+/).pop()===last).length===1;
+    if(uniq&&last!==f.name&&last.length>=5&&!f.keys.includes(last)) f.keys.push(last);
+  }
+
+  /* 5. locations */
+  const locs=[];
+  const taken=new Set([...people.flatMap(p=>p.keys),...facs.flatMap(f=>f.keys)].map(k=>k.toLowerCase()));
+  const typeOf=n=>{const w=LOC_TYPES.find(t=>new RegExp('(^|\\s)'+t+'(\\s|\\d|$)','i').test(n));return w||'Location'};
+  const inferType=(name,desc)=>{
+    if(VESSEL_PRE.test(name)) return 'Vessel';
+    const t=typeOf(name);
+    if(t!=='Location') return t;
+    const d=(desc||'').slice(0,260);
+    const kinds='planet|moon|world|port city|city|station|outpost|colony|settlement|carrier|cruiser|frigate|destroyer|corvette|dreadnought|freighter|vessel|ship|region|continent|island|base|fortress|installation|habitat';
+    const m=d.match(new RegExp('\\b(?:is|was|are)\\s+(?:an?|the)\\s+(?:[\\p{L}\\-]+\\s+){0,4}?('+kinds+')\\b','iu'))||d.match(new RegExp('^(?:an?|the)\\s+(?:[\\p{L}\\-]+\\s+){0,4}?('+kinds+')\\b','iu'));
+    if(!m) return 'Location';
+    const k=m[1].toLowerCase();
+    return k==='port city'?'City':k==='world'?'Planet':['carrier','cruiser','frigate','destroyer','corvette','dreadnought','freighter','ship'].includes(k)?'Vessel':cap(k);
+  };
+  const addLoc=(name,type,o)=>{
+    o=o||{};
+    name=name.replace(LEADART,'').replace(/['’]s$/,'').replace(/\s+/g,' ').trim();
+    const toks=name.split(' ');
+    if(name.length<3||toks.some(w=>TITLE_SET.has(w.toLowerCase()))) return null;
+    if(!o.seeded){
+      if(STOP.has(name.toLowerCase())||(STOP.has(toks[0].toLowerCase())&&toks.length===1)) return null;
+      if(taken.has(name.toLowerCase())) return null;
+      if(toks.length>1&&STOP.has(toks[toks.length-1].toLowerCase())&&!LOC_TYPES.includes(cap(toks[toks.length-1]))) return null;
+    }
+    const lk=name.toLowerCase();
+    const ex=locs.find(l=>l.name.toLowerCase()===lk);
+    if(ex){if(o.desc){ex.desc=ex.desc?ex.desc+' '+o.desc:o.desc;if(ex.type==='Location') ex.type=inferType(ex.name,ex.desc)}if(o.oid) ex.oids.add(o.oid);return ex}
+    const l={t:'l',id:'l'+locs.length,name,type:type||'Location',desc:o.desc||'',keys:[name],oids:new Set(o.oid?[o.oid]:[]),side:''};
+    if(l.type==='Location'&&l.desc) l.type=inferType(name,l.desc);
+    locs.push(l);return l;
+  };
+  for(const e of seeds.locations){const nf=parseNameField(e.name,false);addLoc(nf.name,inferType(nf.name,e.desc),{desc:e.desc,oid:e.key,seeded:true})}
+  for(const re of [LOC_D,LOC_B,LOC_A,LOC_C,LOC_F]){
+    for(const m of masked.matchAll(re)){
+      const t=re===LOC_D?'Vessel':re===LOC_C?cap(m[0].split(/\s+/)[0]):re===LOC_F?'Location':typeOf(m[1]);
+      addLoc(m[1],t==='Ship'?'Vessel':t);
+    }
+  }
+  for(const m of masked.matchAll(LOC_E)){
+    const n=m[1];
+    if(n.length>=4&&!/^(?:The|A|An)$/.test(n)) addLoc(n,'Location');
+  }
+  for(const l of (extras.locations||[])) addLoc(l,typeOf(l),{seeded:true});
+  /* keys: the full name, a short form without the ship prefix, and the head word of "Kestrel Station" */
+  const heads={};
+  const personKeys=new Set(people.flatMap(p=>p.keys).map(k=>k.toLowerCase()));
+  for(const l of locs){
+    const w=l.name.split(/\s+/);
+    l.head=w.length>1&&LOC_TYPES.includes(cap(w[w.length-1]))?w[0]:null;
+    if(l.head) heads[l.head]=(heads[l.head]||0)+1;
+  }
+  for(const l of locs){
+    if(l.head&&heads[l.head]===1&&!personKeys.has(l.head.toLowerCase())) l.keys.push(l.head);
+    if(VESSEL_PRE.test(l.name)){
+      l.keys.push(l.name.replace(VESSEL_PRE,''));
+      if(/^UNS/.test(l.name)) l.side='union';
+    }
+  }
+  /* drop guesses that duplicate a longer location, and anything that is really a person or faction */
+  const final=locs.filter(l=>!locs.some(o=>o!==l&&o.name.length>l.name.length&&o.keys.some(k=>k.toLowerCase()===l.name.toLowerCase())))
+    .filter(l=>!locs.some(o=>o!==l&&o.name.length>l.name.length&&o.name.toLowerCase().includes(l.name.toLowerCase())));
+  final.forEach((l,i)=>l.id='l'+i);
+  const planets=final.filter(l=>PLANET_TYPES.includes(l.type));
+  if(planets.length===1) planets[0].qkeys=['the planet','the world'];
+  for(const l of final){
+    l.region=REGION_TYPES.includes(l.type)||REGION_TYPES.includes(cap(l.name.split(/\s+/).pop()))&&l.type==='Location';
+    const sc=(l.desc.match(/(\p{Lu}\p{L}+)-class\s+((?:light|heavy|escort|fleet|medium|strike)\s+)?(carrier|cruiser|frigate|destroyer|corvette|dreadnought|freighter|battleship)/u));
+    l.shipClass=sc?sc[1]+'-class '+(sc[2]||'')+sc[3]:'';
+    const h=hash(l.name);l.ref=String.fromCharCode(65+h%8)+((h>>>3)%9+1)+'-'+String((h>>>7)%90+10);
+  }
+
+  /* 6. codex: setting terms, eras and events, ship and NHP classes */
+  const codex=[];
+  const addX=(name,cat,keys,def)=>{
+    if(codex.some(x=>x.name.toLowerCase()===name.toLowerCase())) return;
+    codex.push({t:'x',id:'x'+codex.length,name,cat,def:def||'',desc:'',keys,oids:new Set()});
+  };
+  for(const d of LEX_TERMS) if(lexRe(d.keys,false).test(text)) addX(d.name,d.cat,d.keys,d.def);
+  for(const m of text.matchAll(EVENT_RE)){
+    const n=m[1].replace(LEADART,'').trim();
+    if(n.split(/\s+/).length>=2&&!facs.some(f=>f.keys.includes(n))) addX(n,'Era or event',[n],'');
+  }
+  for(const m of text.matchAll(CLASS_RE)){
+    if(CLASS_SKIP.has(m[1])) continue;
+    const ctx=text.slice(m.index,m.index+90).match(/^\S+[- ]class\s+((?:light|heavy|escort|fleet|medium)\s+)?([a-z]+(?:\s+(?:[a-z]+|NHP))?)/);
+    const kind=ctx?((ctx[1]||'')+ctx[2]).replace(/\s+(is|and|saw|was|in|of|that|which|under)\b.*$/,''):'';
+    addX(m[1]+'-class','Class',[m[1]+'-class',m[1]+' class'],kind?`${m[1]}-class ${kind}`:'');
+  }
+
+  /* 7. cross-reference: one pass over every sentence */
+  const all=[...people,...facs,...final,...codex];
+  const idx=makeIndex(all,true);
+  for(const e of all){e.occ=[];e.own=[];e.coIds=new Map();e.cue=[];e.haz=[]}
+  const STANCE_CUES=[S_HOSTILE,SOFT_HOSTILE,WARY_RE,TRUST_RE,ALLY_STRONG,ALLY_SOFT];
+  /* A cue word belongs to the nearest entity before it in the sentence (else a close one after it) */
+  const owner=(ms,pos,end)=>{
+    let o=null;
+    for(const mm of ms) if(mm.end<=pos&&pos-mm.end<=140) o=mm;
+    if(!o) for(const mm of ms) if(mm.start>=end&&mm.start-end<=50){o=mm;break}
+    return o;
+  };
+  sents.forEach(s=>{
+    const ms=mentionsIn(idx,s.t),set=[...new Set(ms.map(x=>x.e))];
+    for(const e of set){
+      const mine=s.owner&&e.oids&&e.oids.has(s.owner);
+      (mine?e.own:e.occ).push(s.t);
+      for(const o of set) if(o!==e) e.coIds.set(o.id,(e.coIds.get(o.id)||0)+1);
+    }
+    for(const re of STANCE_CUES) for(const m of s.t.matchAll(re)){
+      const o=owner(ms,m.index,m.index+m[0].length);
+      if(o&&!(s.owner&&o.e.oids&&o.e.oids.has(s.owner))) o.e.cue.push(m[0]);
+    }
+    for(const m of s.t.matchAll(HAZARDS)){
+      const o=owner(ms,m.index,m.index+m[0].length);
+      if(o&&o.e.t==='l'&&!(s.owner&&o.e.oids&&o.e.oids.has(s.owner))) o.e.haz.push(m[0]);
+    }
+  });
+  const sideOf=e=>{
+    if(e.side==='union') return true;
+    for(const id of e.coIds.keys()){const o=all.find(x=>x.id===id);if(o&&o.side==='union') return true}
+    return !!(e.affil&&/\b(UND|UAD|Union)\b/.test(e.affil));
+  };
+  for(const e of [...people,...facs]){
+    const blob=[e.desc,...e.cue].join(' ');
+    const st=stanceOf(e.t==='f'?blob.split(/\s+/).filter(w=>!e.keys.some(k=>k.split(/\s+/).includes(w))).join(' '):blob,e.fixed);
+    e.status=st.status;e.threat=st.threat;
+    if(e.t==='p'&&e.status!=='HOSTILE'&&!st.sh&&!st.tr&&sideOf(e)){e.status='ALLIED';e.threat=0}
+    e.mentions=e.occ.length;
+    delete e.fixed;
+  }
+  for(const l of final){
+    const canon=w=>{w=w.toLowerCase();return w==='debris'?w:w.replace(/ies$/,'y').replace(/([^s])s$/,'$1')};
+    l.hazards=SHIP_TYPES.includes(l.type)?[]:[...new Set([...(l.desc.match(HAZARDS)||[]),...l.haz].map(canon))];
+    l.mentions=l.occ.length;
+  }
+  for(const x of codex) x.mentions=x.occ.length;
+  for(const p of people){
+    const blob=(p.role+' '+(p.desc||'').split('. ').slice(0,2).join('. ')).toLowerCase();
+    p.tags=[];
+    if(/\bnhp\b/.test(blob)) p.tags.push('NHP');
+    if(/\bmarines?\b/.test(blob)) p.tags.push('Marine');
+    if(/\bnaval|navy\b/.test(blob)) p.tags.push('Navy');
+    if(/ambassador|diplomat|envoy/.test(blob+' '+p.title.toLowerCase())) p.tags.push('Diplomat');
+  }
+  model.hazards=[...new Set(final.flatMap(l=>l.hazards))];
+  const idxQ=makeIndex(all,true);
+  objs.forEach((o,i)=>{
+    o.id='o'+i;
+    const f=[...scanText(idxQ,o.text)];
+    o.locs=f.filter(e=>e.t==='l').map(e=>e.id);
+    o.people=f.filter(e=>e.t==='p').map(e=>e.id);
+    o.facs=f.filter(e=>e.t==='f').map(e=>e.id);
+  });
+
+  /* 8. mission profile */
+  const narrative=sents.filter(x=>!x.owner).map(x=>x.t).join(' ');
+  model.profile=PROFILES.map(([n,re])=>[n,(narrative.match(re)||[]).length]).filter(x=>x[1]>=1).sort((a,b)=>b[1]-a[1]).slice(0,3).map(x=>x[0]);
+
+  model.persons=people;model.factions=facs;model.locations=final;model.codex=codex;model.objectives=objs;
+  return model;
+}
+
+/* ===================== UI: render model into tabs ===================== */
+const $=(s,r=document)=>r.querySelector(s);
+const $$=(s,r=document)=>[...r.querySelectorAll(s)];
+const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
+const store={get(k,d){try{const v=localStorage.getItem(k);return v===null?d:v}catch(e){return d}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}},del(k){try{localStorage.removeItem(k)}catch(e){}}};
+
+/* ---- house themes: look defaults, copy and emblem ---- */
+const BOOT_DEFAULT=['Establishing secure link','Decrypting transmission','Parsing personnel files','Plotting locations','Compiling operations order'];
+const SVG=(inner,sw)=>`<svg class="seal" viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="${sw||2.5}" aria-hidden="true">${inner}</svg>`;
+const SEALS={
+  holo:SVG('<circle cx="50" cy="50" r="44"/><circle cx="50" cy="50" r="34" stroke-width="1.2"/><path d="M50 14l9 24 26 1-21 16 8 25-22-15-22 15 8-25-21-16 26-1z" fill="currentColor" fill-opacity=".18"/><path d="M30 84l20-9 20 9" stroke-width="2"/>'),
+  gms:SVG('<path d="M50 8l36 21v42L50 92 14 71V29z"/><circle cx="50" cy="50" r="17"/><path d="M50 33v34M33 50h34" stroke-width="1.5"/><path d="M26 36l24-14 24 14" stroke-width="1.2" opacity=".6"/>'),
+  ipsn:SVG('<circle cx="50" cy="44" r="36"/><path d="M50 14l5.5 24 24 5.5-24 5.5L50 73l-5.5-24-24-5.5 24-5.5z" fill="currentColor" fill-opacity=".22"/><path d="M20 84l30-13 30 13M20 94l30-13 30 13" stroke-width="2.2"/>'),
+  ssc:SVG('<circle cx="38" cy="50" r="27"/><circle cx="62" cy="50" r="27"/><path d="M50 16l15 34-15 34-15-34z" stroke-width="1.2" fill="currentColor" fill-opacity=".16"/>',2),
+  horus:SVG('<path d="M5 50C22 24 78 24 95 50 78 76 22 76 5 50z"/><circle cx="50" cy="50" r="15"/><circle cx="50" cy="50" r="5.5" fill="currentColor"/><path d="M50 10v7M25 17l3.5 5M75 17l-3.5 5M50 65c0 14 8 22 18 24" stroke-width="1.8"/>',2.2),
+  ha:SVG('<path d="M50 6l36 11v31c0 23-15 38-36 46C29 86 14 71 14 48V17z"/><path d="M50 20v62M34 38h32" stroke-width="3.2"/><path d="M26 30l24-9 24 9" stroke-width="1.2" opacity=".6"/>')
+};
+const THEMES={
+  holo:{sub:'Paste field notes. Get an operations order.',scan:1,cut:1,glow:1,tex:1,boot:BOOT_DEFAULT,strap:'HOLOGRAPHIC DISPLAY'},
+  fleet:{sub:'Paste field notes. Get an operations order.',scan:0,cut:0,glow:0,tex:0,boot:BOOT_DEFAULT,strap:'FLEET ISSUE'},
+  amber:{sub:'Paste field notes. Get an operations order.',scan:1,cut:0,glow:1,tex:1,boot:BOOT_DEFAULT,strap:'AMBER TERMINAL'},
+  green:{sub:'Paste field notes. Get an operations order.',scan:1,cut:0,glow:1,tex:1,boot:BOOT_DEFAULT,strap:'GREEN TERMINAL'},
+  paper:{sub:'Paste field notes. Get an operations order.',scan:0,cut:0,glow:0,tex:1,boot:BOOT_DEFAULT,strap:'PAPER DOSSIER'},
+  gms:{sub:'Standardized. Universal. Dependable.',scan:0,cut:0,glow:0,tex:1,strap:'GMS // STANDARD ISSUE',
+    boot:['Checking universal license','Loading standard protocols','Cross-referencing personnel','Plotting locations','Filing operations order in triplicate']},
+  ipsn:{sub:'Built to carry. Built to last.',scan:0,cut:0,glow:0,tex:1,strap:'IPS-N // CARGO MANIFEST COPY',
+    boot:['Opening cargo manifest','Checking seals and tie-downs','Logging crew and passengers','Charting lanes and ports','Stamping operations order']},
+  ssc:{sub:'Exceptional by design.',scan:0,cut:0,glow:1,tex:1,strap:'SSC // PREMIER CHANNEL',
+    boot:['Authenticating premium channel','Curating the briefing','Dossiers prepared','Composing the area of operations','Finalizing operations order']},
+  horus:{sub:'Everything is a mirror.',scan:1,cut:1,glow:1,tex:1,strap:'HORUS // MIRRORED, DO NOT GATEKEEP',
+    boot:['Joining the mesh','Routing around the gatekeepers','Pulling dossiers from everywhere','Mapping the unmapped','Publishing operations order openly']},
+  ha:{sub:'Strength is a policy.',scan:1,cut:1,glow:0,tex:1,strap:'HARRISON ARMORY // ARMORY ISSUE',
+    boot:['Verifying chain of command','Arming data links','Loading personnel files','Plotting firing lines','Issuing operations order']}
+};
+const sealHtml=()=>SEALS[document.documentElement.dataset.style]||SEALS.holo;
+
+const CLASS_NOTE={'UNCLASSIFIED':'For general distribution','RESTRICTED':'Authorised crew only','SECRET':'Eyes only // Do not relay','TOP SECRET':'Cosmic // Eyes only // Destroy after reading'};
+const ADJ=['Iron','Silent','Crimson','Hollow','Broken','Obsidian','Pale','Burning','Distant','Cold','Gilded','Ashen','Dark','Static','Fallen','Silver','Rusted','Veiled','Black','Ember'];
+const NOUN=['Lantern','Meridian','Halcyon','Anvil','Vigil','Thorn','Comet','Harbor','Sparrow','Gambit','Lance','Cinder','Warden','Tide','Reliquary','Vanguard','Mirage','Talon','Beacon','Eclipse'];
+const MON=['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+
+const SAMPLE_LANCER=`CLASSIFICATION: RESTRICTED
+OPERATION: Operation Brass Lantern
+FROM: UND Command
+TO: Lancer Team Leaders
+---
+
+Union Administrator Sele Ortiz has asked for an escort to the Harrow Reach, where the mining world Tamsin-4 has been cut off from the omninet since its blinkgate station went dark. Your lance is assigned to the UNS-CV Calloway, an Ebro-class light carrier, to protect the survey party and find out who scuttled the gate. Do not engage the Tamsin militia unless fired upon. Recover the gate's black box if possible.
+
+Persons:
+  Commander Joss Adeyemi -- Commander Adeyemi captains the Calloway and has little patience for civilian delays. She served alongside Administrator Ortiz during the Harrow Dispute and trusts her judgment.
+
+  Calloway, Shipboard NHP -- The carrier's NHP is dry, precise and fond of understatement. It has already flagged unusual traffic near the dead gate.
+
+  Warden Pell Varga -- Head of the Tamsin Free Miners. Varga cannot be fully trusted: the Miners profit from the blackout and may have armed the militia.
+
+Locations:
+  Tamsin-4 -- A cold mining world on the Harrow Reach. Orbital refineries are unstable and radiation levels near the gate are high.
+
+Factions:
+  Tamsin Free Miners -- A union of independent mining crews. They are hostile to outside interference and have a history of sabotage against rivals.
+
+  Department of Justice and Human Rights -- A DoJ/HR task force is investigating the blackout and will provide fire support if the militia attacks.`;
+const SAMPLE_GENERIC=`Three days ago the mining outpost Kestrel Station went dark in orbit above Tessaly Prime. Station Director Mara Okonkwo sent a final burst transmission before the blackout: the Vantari Syndicate has seized the refinery deck and is holding forty-one crew. Syndicate warlord Corvin "Redhand" Vask commands an estimated thirty armed raiders and has parked the stolen freighter Gilded Mercy at Docking Ring 3. Two patrol drones sweep the outer hull every ten minutes.
+
+Your team must board Kestrel Station through the cargo airlock on the dark side and rescue Director Okonkwo. Secure the refinery control room before the Syndicate can vent the coolant. Recover the encrypted ledger from Vask's quarters if possible. Do not engage the Gilded Mercy unless fired upon.
+
+Commander Ilse Brandt aboard the UES Halcyon will provide fire support from the Tessaly Belt. Her shuttle pilot, Lieutenant Dax Ferro, will hold at the rendezvous point for ninety minutes. Dr. Yun Sato, a Syndicate defector, can supply door codes for the lower decks but cannot be fully trusted. Extraction window closes at 0400 station time. Radiation levels in the lower reactor corridor are unstable.`;
+const SAMPLES=[['Lancer sample',SAMPLE_LANCER],['Generic sample',SAMPLE_GENERIC]];
+
+const state={model:analyze('',{}),full:null,removed:new Set(),meta:{},tab:'brief',done:new Set(),seed:0,gen:0,bootTimer:null,sample:0,open:new Set()};
+
+function persistOpen(){store.set('bt-open',JSON.stringify([...state.open]))}
+function persist(){store.set('bt-removed',JSON.stringify([...state.removed]));store.set('bt-done',JSON.stringify([...state.done]))}
+const FIELDS=[['#classif','bt-classif'],['#opName','bt-op'],['#issuer','bt-from'],['#recipient','bt-to']];
+const saveFields=()=>{FIELDS.forEach(([s,k])=>store.set(k,$(s).value));store.set('bt-seed',String(state.seed))};
+const XFIELDS=[['#xPersons','bt-xp'],['#xFacs','bt-xf'],['#xLocs','bt-xl']];
+const saveExtras=()=>XFIELDS.forEach(([s,k])=>store.set(k,$(s).value));
+const saveDraft=()=>store.set('bt-draft',$('#src').value);
+function applyRemovals(){
+  const f=state.full,rm=state.removed,keep=(t,e)=>!rm.has(t+':'+e.name.toLowerCase());
+  state.model=Object.assign({},f,{persons:f.persons.filter(e=>keep('p',e)),factions:f.factions.filter(e=>keep('f',e)),locations:f.locations.filter(e=>keep('l',e)),codex:f.codex.filter(e=>keep('x',e))});
+  state.model.hazards=[...new Set(state.model.locations.flatMap(l=>l.hazards))];
+}
+const rmBtn=e=>`<button type="button" class="rm" data-id="${e.id}" aria-label="Remove ${esc(e.name)}" title="Remove from briefing">×</button>`;
+const DEF={classif:'TOP SECRET',op:'',from:'Fleet Intelligence Command',to:'Strike Team Leaders'};
+const HKEYS={classification:'classif',classif:'classif',operation:'op','operation name':'op',op:'op',codename:'op',from:'from',issuer:'from','issued by':'from',to:'to',recipient:'to',addressee:'to'};
+function splitHeader(text){
+  const lines=text.replace(/\r/g,'').split('\n');let i=0;
+  while(i<lines.length&&!lines[i].trim()) i++;
+  const fields={};let found=false;
+  while(i<lines.length){
+    const m=lines[i].match(/^\s*([A-Za-z][A-Za-z ]{1,20}?)\s*[:=]\s*(.*?)\s*$/);
+    const k=m&&HKEYS[m[1].toLowerCase()];
+    if(!k) break;
+    fields[k]=m[2];found=true;i++;
+  }
+  if(!found) return {found:false,fields,body:text};
+  if(i<lines.length&&/^\s*(?:-{3,}|={3,})\s*$/.test(lines[i])) i++;
+  else if(i<lines.length&&!lines[i].trim()) i++;
+  return {found:true,fields,body:lines.slice(i).join('\n').replace(/^\n+/,'')};
+}
+function applyHeader(h){
+  const f=Object.assign({},DEF,h.fields);
+  const norm=f.classif.toUpperCase().replace(/[-_]+/g,' ').replace(/\s+/g,' ').trim();
+  const el=$('#classif'),opt=[...el.options].find(o=>o.text===norm);
+  let note='';
+  if(opt) el.value=opt.value;
+  else{el.value=DEF.classif;if(h.fields.classif) note=` Unknown classification "${h.fields.classif}", using ${DEF.classif}.`}
+  $('#opName').value=f.op;
+  $('#issuer').value=f.from||DEF.from;
+  $('#recipient').value=f.to||DEF.to;
+  saveFields();
+  return note;
+}
+function ingest(text){
+  const h=splitHeader(text);
+  const note=h.found?applyHeader(h):'';
+  $('#src').value=h.body;saveDraft();
+  return note;
+}
+const headerText=()=>['CLASSIFICATION: '+$('#classif').value,...($('#opName').value.trim()?['OPERATION: '+$('#opName').value.trim()]:[]),'FROM: '+($('#issuer').value.trim()||DEF.from),'TO: '+($('#recipient').value.trim()||DEF.to),'---',''].join('\n');
+function readInputs(){
+  const h0=splitHeader($('#src').value);
+  if(h0.found){applyHeader(h0);$('#src').value=h0.body;saveDraft()}
+  const lines=id=>$(id).value.split('\n').map(s=>s.trim()).filter(Boolean);
+  return {src:$('#src').value,extras:{persons:lines('#xPersons'),factions:lines('#xFacs'),locations:lines('#xLocs')}};
+}
+function makeMeta(model,src){
+  const now=new Date(),p2=n=>String(n).padStart(2,'0');
+  const doy=Math.floor((Date.UTC(now.getUTCFullYear(),now.getUTCMonth(),now.getUTCDate())-Date.UTC(now.getUTCFullYear(),0,0))/864e5);
+  const h=hash(src+state.seed);
+  const op=$('#opName').value.trim()||`${ADJ[h%ADJ.length]} ${NOUN[(h>>>8)%NOUN.length]}`;
+  const ops=model.locations.filter(l=>!l.region);
+  const loc=ops.find(l=>PLANET_TYPES.includes(l.type))||ops.find(l=>model.objectives.some(o=>o.locs.includes(l.id)))||ops[0];
+  return {
+    op:op.toUpperCase(),
+    classif:$('#classif').value,
+    from:$('#issuer').value.trim()||'Command',
+    to:$('#recipient').value.trim()||'All hands',
+    dtg:`${p2(now.getUTCDate())}${p2(now.getUTCHours())}${p2(now.getUTCMinutes())}Z ${MON[now.getUTCMonth()]} ${String(now.getUTCFullYear()).slice(2)}`,
+    sd:`SD ${String(now.getUTCFullYear()).slice(2)}${String(doy).padStart(3,'0')}.${p2(now.getUTCHours())}`,
+    ctl:`FIC-${String(now.getUTCFullYear()).slice(2)}-${String(h%9000+1000)}`,
+    area:loc?loc.name:'',
+    subject:loc?`${op.toUpperCase()} // ${loc.name.toUpperCase()}`:op.toUpperCase()
+  };
+}
+
+/* entity highlighting: one pass over the raw text, escaping each piece */
+function buildHl(model){
+  const idx=makeIndex([...model.persons,...model.factions,...model.locations,...model.codex],false);
+  return t=>{
+    if(!idx.re) return esc(t);
+    let out='',last=0;
+    for(const m of t.matchAll(idx.re)){
+      const info=idx.map.get(m[0].toLowerCase());
+      if(!info||(info.cs&&m[0]!==info.orig)) continue;
+      out+=esc(t.slice(last,m.index))+`<span class="ent ent-${info.e.t}" data-t="${info.e.t}" data-id="${info.e.id}">${esc(m[0])}</span>`;
+      last=m.index+m[0].length;
+    }
+    return out+esc(t.slice(last));
+  };
+}
+const byId=(m,id)=>m.persons.find(p=>p.id===id)||m.factions.find(f=>f.id===id)||m.locations.find(l=>l.id===id)||m.codex.find(x=>x.id===id)||null;
+const ckey=e=>e.t+':'+e.name.toLowerCase();
+const cardCls=e=>'card has-body'+(state.open.has(ckey(e))?' open':'');
+const tgBtn=e=>`<button type="button" class="tg" aria-expanded="${state.open.has(ckey(e))}" aria-label="Expand or collapse ${esc(e.name)}" title="Expand or collapse"></button>`;
+const allBar=()=>`<div class="allbar"><button type="button" class="btn ghost" data-all="open">Expand all</button><button type="button" class="btn ghost" data-all="close">Collapse all</button></div>`;
+const chipBtn=e=>`<button type="button" class="${e.t}${['HOSTILE','WARY'].includes(e.status)?' bad':''}" data-t="${e.t}" data-id="${e.id}">${esc(e.name)}</button>`;
+function linked(m,e,t,max){
+  const out=[];
+  for(const [id,n] of e.coIds){const o=byId(m,id);if(o&&o.t===t) out.push([o,n])}
+  out.sort((a,b)=>b[1]-a[1]);
+  return out.slice(0,max||8).map(x=>x[0]);
+}
+const linkBlock=(title,list)=>list.length?`<div><div class="lead" style="margin-top:0">${title}</div><div class="chips">${list.map(chipBtn).join('')}</div></div>`:'';
+
+function blocksHtml(blocks,hl){
+  return blocks.map(b=>b.type==='ul'?`<ul>${b.items.map(i=>`<li>${hl(i)}</li>`).join('')}</ul>`:`<p>${hl(b.text)}</p>`).join('');
+}
+
+function renderBrief(){
+  const m=state.model,meta=state.meta;
+  if(m.empty) return `<div class="empty"><b>No source text</b><p>Paste your session notes, a hook, or a scene description into the console and press Generate briefing.</p></div>`;
+  const hl=buildHl(m);
+  let n=0;const sec=(title,body)=>`<section class="sec"><h3><span class="n">${++n}</span>${title}</h3>${body}</section>`;
+  const out=[];
+  const prim=m.objectives.filter(o=>o.pri==='PRIMARY'),sec2=m.objectives.filter(o=>o.pri==='SECONDARY'),rest=m.objectives.filter(o=>o.pri==='RESTRICTION');
+
+  let sit=blocksHtml(m.situation,hl);
+  if(m.persons.length) sit+=`<div class="lead">Personnel of interest</div><div class="chips">${m.persons.map(chipBtn).join('')}</div>`;
+  if(m.factions.length) sit+=`<div class="lead">Factions</div><div class="chips">${m.factions.map(chipBtn).join('')}</div>`;
+  const places=m.locations.filter(l=>!l.region),regions=m.locations.filter(l=>l.region);
+  if(m.locations.length) sit+=`<div class="lead">Area of operations</div><div class="chips">${[...places,...regions].map(chipBtn).join('')}</div>`;
+  const terms=m.codex.filter(x=>x.cat==='Setting term');
+  if(terms.length) sit+=`<div class="lead">Setting terms</div><div class="chips">${terms.map(chipBtn).join('')}</div>`;
+  if(sit) out.push(sec('Situation',sit));
+
+  for(const c of m.custom) out.push(sec(esc(c.title),blocksHtml(c.blocks,hl)));
+
+  const concern=m.factions.filter(f=>['HOSTILE','WARY','UNCERTAIN'].includes(f.status)).sort((a,b)=>b.threat-a.threat);
+  if(m.threat.length||m.hazards.length||concern.length){
+    let b=blocksHtml(m.threat,hl);
+    if(concern.length) b+=`<div class="lead">Factions of concern</div><div class="chips">${concern.map(f=>`<button type="button" class="f bad" data-t="f" data-id="${f.id}">${esc(f.name)} <span class="tag ${f.status.toLowerCase()}">${f.status}</span></button>`).join('')}</div>`;
+    if(m.hazards.length) b+=`<div class="lead">Hazards noted</div><div class="chips">${m.hazards.map(h=>`<span class="tag restriction">${esc(h)}</span>`).join('')}</div>`;
+    out.push(sec('Threat assessment',b));
+  }
+
+  if(m.objectives.length){
+    let b='';
+    if(prim.length){
+      const stm='Team will '+prim.slice(0,3).map(o=>lcfirst(o.text)).join('; then ')+'.'+(prim.length>3?` ${prim.length-3} further primary task${prim.length-3>1?'s':''} follow.`:'');
+      b+=`<div class="statement"><b>Mission statement</b>${hl(stm)}</div>`;
+    }
+    const li=(o,i,k)=>`<li><span class="k">${k}${i+1}.</span><span>${hl(o.text)}</span><span class="tag ${o.pri.toLowerCase()}">${o.pri}</span></li>`;
+    b+=`<ul class="ol">${prim.map((o,i)=>li(o,i,'P')).join('')}${sec2.map((o,i)=>li(o,i,'S')).join('')}${rest.map((o,i)=>li(o,i,'R')).join('')}</ul>`;
+    out.push(sec('Mission and tasks',b));
+  }
+  if(m.logistics.length) out.push(sec('Support and logistics',blocksHtml(m.logistics,hl)));
+  out.push(sec('Command and signal',blocksHtml(m.command,hl)+`<p>Report mission status to ${esc(meta.from)} on completion. Acknowledge receipt.</p>`));
+
+  const cls=meta.classif,T=THEMES[document.documentElement.dataset.style]||THEMES.holo;
+  const profile=m.profile.length?`<dt>Profile</dt><dd>${esc(m.profile.join(' / '))}</dd>`:'';
+  const area=meta.area?`<dt>Area</dt><dd>${esc(meta.area)}</dd>`:'';
+  return `<article class="doc${$('#optRedact').checked?' redact':''}">
+    <div class="banner">${esc(cls)}<small>${esc(CLASS_NOTE[cls]||'')}</small></div>
+    <header class="memo">${sealHtml()}<div><div class="auth">${esc(meta.from)}</div><h1>Mission briefing<br>${esc(meta.op)}</h1></div>
+      <dl class="fields"><dt>To</dt><dd>${esc(meta.to)}</dd><dt>From</dt><dd>${esc(meta.from)}</dd><dt>DTG</dt><dd>${esc(meta.dtg)} / ${esc(meta.sd)}</dd><dt>Control no.</dt><dd>${esc(meta.ctl)}</dd>${area}${profile}<dt>Subject</dt><dd>${esc(meta.subject)}</dd></dl>
+    </header>
+    ${out.join('')}
+    <div class="sig"><span>END OF BRIEFING</span><span>${esc(meta.ctl)} // ${esc(cls)}</span><span>${esc(T.strap)}</span></div>
+    <div class="banner">${esc(cls)}</div>
+  </article>`;
+}
+
+function pips(n){return `<span class="pips" aria-label="Threat ${n} of 5">${[1,2,3,4,5].map(i=>`<i class="${i<=n?'on':''}"></i>`).join('')}</span>`}
+function dossier(e,hl){
+  if(!e.desc) return '';
+  const ss=splitSentences(e.desc),head=ss.slice(0,2).join(' '),tail=ss.slice(2).join(' ');
+  return `<p class="dos">${hl(head)}</p>${tail?`<details class="more"><summary>Full dossier</summary><p class="dos">${hl(tail)}</p></details>`:''}`;
+}
+function mentionList(e,hl,max){
+  if(!e.occ.length) return '';
+  const title=e.desc?'Elsewhere in the briefing':'In the briefing';
+  return `<div><div class="lead" style="margin-top:0">${title}</div><ul>${e.occ.slice(0,max||3).map(s=>`<li>${hl(s)}</li>`).join('')}</ul>${e.occ.length>(max||3)?`<p class="hint" style="margin-top:4px">${e.occ.length-(max||3)} more mention${e.occ.length-(max||3)>1?'s':''}</p>`:''}</div>`;
+}
+const mentionMeta=e=>e.mentions?`${e.mentions} mention${e.mentions===1?'':'s'}`:(e.desc?'Dossier entry':'0 mentions');
+
+function renderPersons(){
+  const m=state.model,hl=buildHl(m);
+  if(!m.persons.length) return `<div class="empty"><b>No persons found</b><p>Names are detected after a title such as Captain, Staff Sergeant, Dr. or Ambassador. You can also list them under a PERSONS heading as <i>Name -- description</i>, or add them under Track extra names.</p></div>`;
+  return `<p class="intro">${m.persons.length} person${m.persons.length>1?'s':''} of interest. Status and threat are estimated from the surrounding text and should be checked by the game master.</p>${allBar()}
+  <div class="cards">${m.persons.map(p=>{
+    const sub=[p.title,p.affil].filter(Boolean).join(' · ')||(p.role?'':'No rank or title');
+    const body=dossier(p,hl)+mentionList(p,hl,2);
+    return `<article class="${cardCls(p)}" id="c-${p.id}">
+      <header><div><h4>${esc(p.bare)}</h4><div class="sub">${esc(sub)}${p.role?`${sub?' · ':''}${esc(p.role)}`:''}</div></div><span class="hr"><span class="tag ${p.status.toLowerCase()}">${p.status}</span>${tgBtn(p)}${rmBtn(p)}</span></header><div class="cbody">
+      <div class="meta">${p.status==='ALLIED'?'<span>Friendly</span>':`<span>Threat ${pips(p.threat)}</span>`}<span>${mentionMeta(p)}</span></div>
+      ${p.tags.length?`<div class="tags">${p.tags.map(t=>`<span class="tag kind">${esc(t)}</span>`).join('')}</div>`:''}
+      ${body||'<p class="none">No further detail in the source text.</p>'}
+      ${linkBlock('Affiliations',linked(m,p,'f',5))}
+      ${linkBlock('Linked locations',linked(m,p,'l',5))}
+    </div></article>`}).join('')}</div>`;
+}
+
+function renderFactions(){
+  const m=state.model,hl=buildHl(m);
+  if(!m.factions.length) return `<div class="empty"><b>No factions found</b><p>Groups are detected from words like Syndicate, Alliance, Sovereignty, Committee or Fleet (for example “the Vantari Syndicate”), plus Lancer powers such as Union, the manufacturers and the Committees. You can also list them under a FACTIONS heading as <i>Name -- description</i>, or add them under Track extra names.</p></div>`;
+  return `<p class="intro">${m.factions.length} faction${m.factions.length>1?'s':''} identified. Stance and threat are estimated from the surrounding text and should be checked by the game master.</p>${allBar()}
+  <div class="cards">${m.factions.map(f=>{
+    const body=(f.note?`<p class="def">${esc(f.note)}</p>`:'')+dossier(f,hl)+mentionList(f,hl,2);
+    return `<article class="${cardCls(f)}" id="c-${f.id}">
+      <header><div><h4>${esc(f.name)}</h4><div class="sub">${esc(f.type)}</div></div><span class="hr"><span class="tag ${f.status.toLowerCase()}">${f.status}</span>${tgBtn(f)}${rmBtn(f)}</span></header><div class="cbody">
+      <div class="meta">${f.threat?`<span>Threat ${pips(f.threat)}</span>`:''}<span>${mentionMeta(f)}</span></div>
+      ${body||'<p class="none">No further detail in the source text.</p>'}
+      ${linkBlock('Persons linked',linked(m,f,'p',6))}
+      ${linkBlock('Active at',linked(m,f,'l',5))}
+    </div></article>`}).join('')}</div>`;
+}
+
+const isShip=l=>SHIP_TYPES.includes(l.type);
+function globe(locs){
+  const cx=150,cy=150,R=66,rad=Math.PI/180,p0=20*rad;
+  const proj=(lat,lon)=>{
+    const f=lat*rad,l=lon*rad;
+    return {x:cx+R*Math.cos(f)*Math.sin(l),
+            y:cy-R*(Math.cos(p0)*Math.sin(f)-Math.sin(p0)*Math.cos(f)*Math.cos(l)),
+            vis:Math.sin(p0)*Math.sin(f)+Math.cos(p0)*Math.cos(f)*Math.cos(l)};
+  };
+  const seg=pts=>{let d='',pen=false;for(const q of pts){if(q.vis>0){d+=(pen?'L':'M')+q.x.toFixed(1)+' '+q.y.toFixed(1);pen=true}else pen=false}return d};
+  let grat='';
+  for(const lat of [-60,-30,0,30,60]){const pts=[];for(let lon=-180;lon<=180;lon+=6)pts.push(proj(lat,lon));grat+=seg(pts)}
+  for(let lon=-150;lon<=180;lon+=30){const pts=[];for(let lat=-90;lat<=90;lat+=6)pts.push(proj(lat,lon));grat+=seg(pts)}
+  const body=locs.find(l=>PLANET_TYPES.includes(l.type));
+  const ships=locs.filter(isShip),surface=locs.filter(l=>!isShip(l)&&l!==body&&!l.region);
+  const trunc=n=>n.length>16?n.slice(0,15)+'…':n;
+  const labels=[];
+  let s=`<svg viewBox="0 0 300 300" class="radar" role="img" aria-label="Schematic globe with surface sites and ships in orbit"><defs><radialGradient id="gl" cx=".35" cy=".3" r=".85"><stop offset="0" style="stop-color:var(--accent);stop-opacity:.4"/><stop offset="1" style="stop-color:var(--bg);stop-opacity:1"/></radialGradient></defs>`;
+  s+=`<circle class="orbit" cx="${cx}" cy="${cy}" r="90"/><circle class="orbit" cx="${cx}" cy="${cy}" r="108"/>`;
+  s+=`<circle class="halo" cx="${cx}" cy="${cy}" r="${R+3}"/>`;
+  s+=`<circle class="planet" cx="${cx}" cy="${cy}" r="${R}" fill="url(#gl)"${body?` data-t="l" data-id="${body.id}"`:''}>${body?`<title>${esc(body.name)}</title>`:''}</circle>`;
+  s+=`<path class="grat" d="${grat}"/>`;
+  surface.forEach(l=>{
+    const h=hash(l.name),lat=-40+((h%1000)/1000)*90,lon=-58+(((h>>>10)%1000)/1000)*116,p=proj(lat,lon);
+    s+=`<circle class="blip" cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="4.5" data-t="l" data-id="${l.id}"><title>${esc(l.name)}</title></circle>`;
+    labels.push({x:p.x,y:p.y+14,t:trunc(l.name),dy:10});
+  });
+  ships.forEach((l,k)=>{
+    const h=hash(l.name),a=h%360,r=k%2?108:90,x=cx+r*Math.cos(a*rad),y=cy+r*Math.sin(a*rad);
+    s+=`<polygon class="ship" points="0,-6 5,5 -5,5" transform="translate(${x.toFixed(1)} ${y.toFixed(1)}) rotate(${a+180})" data-t="l" data-id="${l.id}"><title>${esc(l.name)} (in orbit)</title></polygon>`;
+    const up=y<cy;
+    labels.push({x,y:up?y-10:y+17,t:trunc(l.name.replace(VESSEL_PRE,'')),dy:up?-10:10});
+  });
+  const placed=[];
+  for(const lb of labels){
+    const w=lb.t.length*5.4;
+    for(let i=0;i<6&&placed.some(p=>Math.abs(p.x-lb.x)<(p.w+w)/2+2&&Math.abs(p.y-lb.y)<10);i++) lb.y+=lb.dy;
+    placed.push({x:lb.x,y:lb.y,w});
+    s+=`<text x="${lb.x.toFixed(1)}" y="${lb.y.toFixed(1)}" text-anchor="middle">${esc(lb.t)}</text>`;
+  }
+  s+='</svg>';
+  const caption=(body?`${esc(body.name)} is drawn as the globe. `:'')+`Surface sites sit on the globe and ships (▲) sit in orbit. Regions are not plotted. Positions are generated, not canonical. Select a marker to open its card.`;
+  return {svg:s,caption};
+}
+function renderLocs(){
+  const m=state.model,hl=buildHl(m),g=globe(m.locations);
+  if(!m.locations.length) return `<div class="empty"><b>No locations found</b><p>Places are detected from words like Station, Sector, Moon, Colony or a ship prefix such as UES or UNS-CV. You can also list them under a LOCATIONS heading, or add them under Track extra names.</p></div>`;
+  const cards=m.locations.map(l=>{
+    const body=dossier(l,hl)+mentionList(l,hl,2);
+    const sub=l.shipClass?`${l.type} · ${l.shipClass}`:l.type;
+    return `<article class="${cardCls(l)}" id="c-${l.id}">
+      <header><div><h4>${esc(l.name)}</h4><div class="sub">${esc(sub)}</div></div><span class="hr"><span class="tag">Ref ${esc(l.ref)}</span>${tgBtn(l)}${rmBtn(l)}</span></header><div class="cbody">
+      <div class="meta"><span>${mentionMeta(l)}</span><span>${l.hazards.length?l.hazards.length+' hazard'+(l.hazards.length>1?'s':''):'No hazards noted'}</span></div>
+      ${l.hazards.length?`<div class="chips" style="margin-top:0">${l.hazards.map(h=>`<span class="tag restriction">${esc(h)}</span>`).join('')}</div>`:''}
+      ${body||'<p class="none">No further detail in the source text.</p>'}
+      ${linkBlock('Persons linked',linked(m,l,'p',6))}
+      ${linkBlock('Factions',linked(m,l,'f',5))}
+    </div></article>`}).join('');
+  return `<p class="intro">${m.locations.length} location${m.locations.length>1?'s':''} identified. Grid references and plot positions are generated for display only.</p>${allBar()}
+  <div class="split"><div class="cards">${cards}</div>
+  <figure class="radarbox" style="margin:0">${g.svg}<figcaption>${g.caption}</figcaption></figure></div>`;
+}
+
+function renderObjs(){
+  const m=state.model,hl=buildHl(m);
+  if(!m.objectives.length) return `<div class="empty"><b>No objectives found</b><p>Tasks are detected from sentences like “Your team must…”, “Your assignment is to…”, imperative orders such as “Secure the vault”, or lines under a MISSION or OBJECTIVES heading.</p></div>`;
+  const tasks=m.objectives.filter(o=>o.pri!=='RESTRICTION');
+  const dn=tasks.filter(o=>state.done.has(o.text)).length;
+  const pct=tasks.length?Math.round(dn/tasks.length*100):0;
+  const group=(title,list)=>list.length?`<div class="ogroup"><h4>${title}</h4>${list.map(o=>{
+      const isTask=o.pri!=='RESTRICTION',on=isTask&&state.done.has(o.text);
+      const links=[...o.facs.map(id=>byId(m,id)),...o.locs.map(id=>byId(m,id)),...o.people.map(id=>byId(m,id))].filter(Boolean);
+      return `<button type="button" class="obj" role="${isTask?'checkbox':'note'}" ${isTask?`aria-checked="${on}"`:''} data-o="${esc(o.id)}"><span class="box" aria-hidden="true">${isTask?(on?'✓':''):'!'}</span><span><span class="t">${hl(o.text)}</span>${links.length?`<span class="chips">${links.map(e=>`<span>${esc(e.name)}</span>`).join('')}</span>`:''}</span></button>`}).join('')}</div>`:'';
+  return `<div class="progress"><div class="meta"><span>Progress</span><span id="pcount">${dn} of ${tasks.length} complete</span></div><div class="bar"><i id="pbar" style="width:${pct}%"></i></div></div>
+  ${group('Primary objectives',m.objectives.filter(o=>o.pri==='PRIMARY'))}
+  ${group('Secondary objectives',m.objectives.filter(o=>o.pri==='SECONDARY'))}
+  ${group('Restrictions and rules of engagement',m.objectives.filter(o=>o.pri==='RESTRICTION'))}`;
+}
+
+function renderCodex(){
+  const m=state.model,hl=buildHl(m);
+  if(!m.codex.length) return `<div class="empty"><b>Nothing for the codex</b><p>The codex collects setting terms (NHP, omninet, blinkgate, Diasporan and similar), named eras and events (anything ending in Period, War, Dispute, Years and so on), and ship or NHP classes such as “Ebro-class”. None were found in this text.</p></div>`;
+  const groups=[['Setting term','Setting terms'],['Era or event','Eras and events'],['Class','Classes']];
+  const card=x=>{
+    const people=linked(m,x,'p',5),facs=linked(m,x,'f',5),locs=linked(m,x,'l',5);
+    return `<article class="card" id="c-${x.id}">
+      <header><div><h4>${esc(x.name)}</h4><div class="sub">${esc(x.cat)}</div></div><span class="hr"><span class="tag">${x.mentions} mention${x.mentions===1?'':'s'}</span>${rmBtn(x)}</span></header>
+      ${x.def?`<p class="def">${esc(x.def)}</p>`:''}
+      ${x.occ.length?`<ul>${x.occ.slice(0,3).map(s=>`<li>${hl(s)}</li>`).join('')}</ul>`:''}
+      ${linkBlock('Persons',people)}${linkBlock('Factions',facs)}${linkBlock('Locations',locs)}
+    </article>`;
+  };
+  return `<p class="intro">${m.codex.length} setting reference${m.codex.length>1?'s':''} found. Definitions are short reminders for the table; check the books for rules and detail.</p>
+  ${groups.map(([cat,title])=>{const l=m.codex.filter(x=>x.cat===cat);return l.length?`<h4 class="group-h">${title}</h4><div class="cards">${l.map(card).join('')}</div>`:''}).join('')}`;
+}
+
+const RENDER={brief:renderBrief,persons:renderPersons,factions:renderFactions,locs:renderLocs,objs:renderObjs,codex:renderCodex};
+function show(tab){
+  state.tab=tab;
+  $$('.tab').forEach(t=>t.setAttribute('aria-selected',String(t.dataset.tab===tab)));
+  $('#stage').setAttribute('aria-labelledby','t-'+tab);
+  $('#stage').innerHTML=RENDER[tab]();
+}
+function counts(){
+  $('#n-persons').textContent=state.model.persons.length;
+  $('#n-facs').textContent=state.model.factions.length;
+  $('#n-locs').textContent=state.model.locations.length;
+  $('#n-objs').textContent=state.model.objectives.length;
+  $('#n-codex').textContent=state.model.codex.length;
+  const n=state.removed.size;$('#restore').hidden=!n;$('#restore').textContent=`Restore removed (${n})`;
+}
+function goEntity(t,id){
+  show(t==='p'?'persons':t==='f'?'factions':t==='x'?'codex':'locs');
+  const c=$('#c-'+id);
+  if(c){if(c.classList.contains('has-body')){c.classList.add('open');const ent=byId(state.model,id);if(ent){state.open.add(ckey(ent));persistOpen()}const tg=c.querySelector('.tg');if(tg)tg.setAttribute('aria-expanded','true')}c.scrollIntoView({block:'center',behavior:reduced?'auto':'smooth'});c.classList.add('flash')}
+}
+
+/* plain-text export */
+function plainText(){
+  const m=state.model,meta=state.meta;
+  if(m.empty) return '';
+  const L=[];const blk=b=>b.forEach(x=>L.push(x.type==='ul'?x.items.map(i=>'  - '+i).join('\n'):x.text,''));
+  L.push(`*** ${meta.classif} // ${CLASS_NOTE[meta.classif]||''} ***`,'',`MISSION BRIEFING: ${meta.op}`,`TO: ${meta.to}`,`FROM: ${meta.from}`,`DTG: ${meta.dtg} / ${meta.sd}`,`CONTROL NO: ${meta.ctl}`,...(meta.area?[`AREA: ${meta.area}`]:[]),...(m.profile.length?[`PROFILE: ${m.profile.join(' / ')}`]:[]),`SUBJECT: ${meta.subject}`,'');
+  let n=0;const H=t=>L.push(`${++n}. ${t}`,'');
+  if(m.situation.length||m.persons.length||m.factions.length||m.locations.length){H('SITUATION');blk(m.situation);
+    if(m.persons.length)L.push('Personnel of interest: '+m.persons.map(p=>p.bare+(p.title?' ('+p.title+')':'')).join('; '),'');
+    if(m.factions.length)L.push('Factions: '+m.factions.map(f=>f.name+' ['+f.status+']').join('; '),'');
+    if(m.locations.length)L.push('Area of operations: '+m.locations.map(l=>l.name).join('; '),'')}
+  m.custom.forEach(c=>{H(c.title);blk(c.blocks)});
+  if(m.threat.length||m.hazards.length){H('THREAT ASSESSMENT');blk(m.threat);if(m.hazards.length)L.push('Hazards noted: '+m.hazards.join(', '),'')}
+  if(m.objectives.length){H('MISSION AND TASKS');const k={PRIMARY:'P',SECONDARY:'S',RESTRICTION:'R'},c={P:0,S:0,R:0};
+    for(const pri of ['PRIMARY','SECONDARY','RESTRICTION']) m.objectives.filter(o=>o.pri===pri).forEach(o=>L.push(`  ${k[pri]}${++c[k[pri]]}. ${o.text} [${pri}]`));L.push('')}
+  if(m.logistics.length){H('SUPPORT AND LOGISTICS');blk(m.logistics)}
+  H('COMMAND AND SIGNAL');blk(m.command);L.push(`Report mission status to ${meta.from} on completion. Acknowledge receipt.`,'',`END OF BRIEFING // ${meta.classif}`);
+  return L.join('\n');
+}
+
+/* generate */
+function generate(){
+  clearInterval(state.bootTimer);
+  const {src,extras}=readInputs();
+  const token=++state.gen;
+  state.full=analyze(src,extras);applyRemovals();
+  state.meta=makeMeta(state.model,src);
+  counts();
+  const finish=()=>{if(token!==state.gen)return;show(state.tab);$('#status').textContent=state.model.empty?'Ready':`${state.meta.ctl} generated ${state.meta.dtg}`};
+  if(state.model.empty||!$('#optBoot').checked||reduced){finish();return}
+  show('brief');
+  const lines=(THEMES[document.documentElement.dataset.style]||THEMES.holo).boot;
+  $('#stage').innerHTML='<div class="boot" id="boot"></div>';
+  $('#status').textContent='Decrypting…';
+  let i=0;
+  state.bootTimer=setInterval(()=>{
+    if(token!==state.gen){clearInterval(state.bootTimer);return}
+    if(i<lines.length){const d=document.createElement('div');d.textContent=lines[i++]+' …';$('#boot')?.appendChild(d)}
+    else{clearInterval(state.bootTimer);show('brief');finish()}
+  },170);
+}
+
+/* ---- look options: theme defaults unless the user has set them ---- */
+const OPT_BOXES=[['optScan','bt-scan','scan'],['optGlow','bt-glow','glow'],['optCut','bt-cut','cut'],['optTex','bt-tex','tex']];
+function syncLook(){
+  const r=document.documentElement;
+  r.dataset.glow=$('#optGlow').checked?'on':'off';
+  r.dataset.cut=$('#optCut').checked?'on':'off';
+  r.dataset.tex=$('#optTex').checked?'on':'off';
+  r.dataset.density=$('#optDensity').value;
+  r.dataset.font=$('#optFont').value;
+  $('#display').classList.toggle('crt',$('#optScan').checked);
+}
+function applyThemeDefaults(){
+  const T=THEMES[document.documentElement.dataset.style]||THEMES.holo;
+  for(const [id,key,prop] of OPT_BOXES){const v=store.get(key,null);$('#'+id).checked=v!==null?v==='1':!!T[prop]}
+  syncLook();
+}
+function setStyle(s,init){
+  if(!THEMES[s]) s='green';
+  document.documentElement.dataset.style=s;
+  $$('.chip[data-style]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.style===s)));
+  store.set('bt-style',s);
+  $('#brandSub').textContent=THEMES[s].sub;
+  applyThemeDefaults();
+  if(!store.get('bt-size','')){
+    document.documentElement.style.removeProperty('--body-size');
+    $('#optSize').value=parseInt(getComputedStyle(document.documentElement).getPropertyValue('--body-size'))||17;
+  }
+  if(!init&&!state.model.empty&&state.full) show(state.tab);
+}
+
+/* events */
+document.addEventListener('click',e=>{
+  const rm=e.target.closest('.rm');
+  if(rm){
+    const ent=byId(state.model,rm.dataset.id);
+    if(ent){
+      state.removed.add(ent.t+':'+ent.name.toLowerCase());persist();
+      applyRemovals();counts();show(state.tab);$('#stage').focus({preventScroll:true});
+      $('#status').textContent=`Removed ${ent.name}`;
+    }
+    return;
+  }
+  const all=e.target.closest('[data-all]');
+  if(all){
+    const want=all.dataset.all==='open';
+    $$('#stage .card.has-body').forEach(c=>{
+      c.classList.toggle('open',want);const tg=c.querySelector('.tg');if(tg)tg.setAttribute('aria-expanded',String(want));
+      const ent=byId(state.model,c.id.slice(2));if(ent)want?state.open.add(ckey(ent)):state.open.delete(ckey(ent));
+    });
+    persistOpen();return;
+  }
+  const hd=e.target.closest('.card.has-body > header');
+  if(hd&&!e.target.closest('.rm')){
+    const c=hd.parentElement,on=!c.classList.contains('open');
+    c.classList.toggle('open',on);const tg=c.querySelector('.tg');if(tg)tg.setAttribute('aria-expanded',String(on));
+    const ent=byId(state.model,c.id.slice(2));if(ent){on?state.open.add(ckey(ent)):state.open.delete(ckey(ent));persistOpen()}
+    return;
+  }
+  const chip=e.target.closest('.chip[data-style]');
+  if(chip){setStyle(chip.dataset.style);return}
+  const tab=e.target.closest('.tab');
+  if(tab){show(tab.dataset.tab);return}
+  const red=e.target.closest('.doc.redact .ent-p:not(.revealed)');
+  if(red){red.classList.add('revealed');return}
+  const ent=e.target.closest('[data-t][data-id]');
+  if(ent&&$('#stage').contains(ent)){goEntity(ent.dataset.t,ent.dataset.id);return}
+  const ob=e.target.closest('.obj[role="checkbox"]');
+  if(ob){
+    const o=state.model.objectives.find(x=>x.id===ob.dataset.o);if(!o)return;
+    state.done.has(o.text)?state.done.delete(o.text):state.done.add(o.text);persist();
+    const on=state.done.has(o.text);ob.setAttribute('aria-checked',String(on));ob.querySelector('.box').textContent=on?'✓':'';
+    const tasks=state.model.objectives.filter(x=>x.pri!=='RESTRICTION'),dn=tasks.filter(x=>state.done.has(x.text)).length;
+    $('#pcount').textContent=`${dn} of ${tasks.length} complete`;$('#pbar').style.width=Math.round(dn/tasks.length*100)+'%';
+  }
+});
+$('#tabs').addEventListener('keydown',e=>{
+  const ts=$$('.tab'),i=ts.indexOf(document.activeElement);
+  if(i<0||!['ArrowRight','ArrowLeft'].includes(e.key))return;
+  const n=ts[(i+(e.key==='ArrowRight'?1:ts.length-1))%ts.length];n.focus();show(n.dataset.tab);
+});
+$('#restore').onclick=()=>{state.removed.clear();persist();applyRemovals();counts();show(state.tab);$('#status').textContent='Restored removed entries'};
+$('#go').onclick=generate;
+$('#sample').onclick=()=>{
+  const [label,body]=SAMPLES[state.sample%SAMPLES.length];state.sample++;
+  state.removed.clear();state.done.clear();persist();
+  ingest(body);
+  generate();$('#status').textContent='Loaded '+label;
+};
+$('#clear').onclick=()=>{state.removed.clear();state.done.clear();persist();$('#src').value='';$('#xPersons').value='';$('#xFacs').value='';$('#xLocs').value='';saveExtras();generate()};
+$('#reroll').onclick=()=>{state.seed++;$('#opName').value='';saveFields();if(state.model.empty)return;state.meta=makeMeta(state.model,readInputs().src);show(state.tab)};
+$('#classif').onchange=()=>{if(!state.model.empty){state.meta.classif=$('#classif').value;if(state.tab==='brief')show('brief')}};
+OPT_BOXES.forEach(([id,key])=>{$('#'+id).onchange=()=>{store.set(key,$('#'+id).checked?'1':'0');syncLook()}});
+$('#optBoot').onchange=()=>store.set('bt-boot',$('#optBoot').checked?'1':'0');
+$('#optRedact').onchange=()=>{store.set('bt-redact',$('#optRedact').checked?'1':'0');if(state.tab==='brief')show('brief')};
+$('#optSize').oninput=e=>{document.documentElement.style.setProperty('--body-size',e.target.value+'px');store.set('bt-size',e.target.value)};
+$('#optFont').onchange=()=>{store.set('bt-font',$('#optFont').value);syncLook()};
+$('#optDensity').onchange=()=>{store.set('bt-density',$('#optDensity').value);syncLook()};
+$('#resetLook').onclick=()=>{
+  ['bt-scan','bt-glow','bt-cut','bt-tex','bt-font','bt-density','bt-size'].forEach(k=>store.del(k));
+  $('#optFont').value='theme';$('#optDensity').value='comfortable';
+  document.documentElement.style.removeProperty('--body-size');
+  applyThemeDefaults();
+  $('#optSize').value=parseInt(getComputedStyle(document.documentElement).getPropertyValue('--body-size'))||17;
+  $('#status').textContent='Look reset to house defaults';
+};
+$('#print').onclick=()=>{try{window.print()}catch(e){$('#status').textContent='Printing is not available here'}};
+$('#copy').onclick=async()=>{
+  const t=plainText();if(!t){$('#status').textContent='Nothing to copy';return}
+  try{await navigator.clipboard.writeText(t);$('#status').textContent='Copied to clipboard'}
+  catch(err){
+    const ta=document.createElement('textarea');ta.value=t;ta.style.cssText='position:fixed;opacity:0';document.body.appendChild(ta);ta.select();
+    let ok=false;try{ok=document.execCommand('copy')}catch(x){}ta.remove();
+    $('#status').textContent=ok?'Copied to clipboard':'Copy blocked here. Select the briefing text and copy it manually.';
+  }
+};
+
+function setSource(hide,keep){
+  $('#console').hidden=hide;
+  $('.app').classList.toggle('solo',hide);
+  const b=$('#toggleSrc');b.textContent=hide?'Show source':'Hide source';b.setAttribute('aria-expanded',String(!hide));
+  if(!keep) store.set('bt-hide',hide?'1':'0');
+}
+$('#toggleSrc').onclick=()=>setSource(!$('#console').hidden);
+
+/* source file */
+async function loadBriefing(quiet){
+  let text='',err='',usedDraft=false,note='';
+  try{
+    const r=await fetch('briefing.txt',{cache:'no-store'});
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    text=await r.text();
+    if(!text.trim()) throw new Error('the file is empty');
+  }catch(e){err=e.message||'not found'}
+  if(text){note=ingest(text)}
+  else if(!$('#src').value.trim()){const d=store.get('bt-draft','');if(d){$('#src').value=d;usedDraft=true}else ingest(SAMPLE_LANCER)}
+  const boot=$('#optBoot').checked;
+  if(quiet) $('#optBoot').checked=false;
+  generate();
+  $('#optBoot').checked=boot;
+  $('#status').textContent=text?'Loaded briefing.txt'+note:usedDraft?'briefing.txt could not be read. Showing the draft saved in this browser.':location.protocol==='file:'
+    ?'Browsers block pages opened straight from a folder from reading briefing.txt. Serve the folder with a local web server, or use Open .txt or drop a .txt file here. Showing the built-in sample.'
+    :`Could not read briefing.txt (${err}). Showing the built-in sample. Use Open .txt or drop a .txt file here.`;
+}
+async function loadFile(f){
+  if(!f) return;
+  try{const note=ingest(await f.text());generate();$('#status').textContent='Loaded '+f.name+note}
+  catch(x){$('#status').textContent='Could not read that file'}
+}
+addEventListener('dragover',e=>{if(e.dataTransfer&&[...e.dataTransfer.types].includes('Files'))e.preventDefault()});
+addEventListener('drop',e=>{const f=e.dataTransfer&&e.dataTransfer.files[0];if(f){e.preventDefault();loadFile(f)}});
+$('#reload').onclick=()=>loadBriefing(false);
+$('#src').addEventListener('input',saveDraft);
+XFIELDS.forEach(([s])=>$(s).addEventListener('input',saveExtras));
+FIELDS.forEach(([s])=>{$(s).addEventListener('input',saveFields);$(s).addEventListener('change',saveFields)});
+$('#saveTxt').onclick=async()=>{
+  const body=$('#src').value,st=m=>$('#status').textContent=m;
+  if(!body.trim()){st('Nothing to save');return}
+  const t=headerText()+body;
+  if(window.claude){
+    let d=null;
+    try{d=await window.claude.use('downloads')}catch(e){}
+    if(!d){st('Saving a file is not available in this view');return}
+    try{const r=await d.save({filename:'briefing.txt',data:t});st(r.status==='saved'?'Saved briefing.txt':'File sent')}
+    catch(e){st(e&&e.code==='declined'?'Save cancelled':'Could not save here ('+((e&&e.code)||'error')+')')}
+    return;
+  }
+  try{
+    const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([t],{type:'text/plain'}));a.download='briefing.txt';
+    document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),2000);
+    st('Saved briefing.txt to your downloads folder');
+  }catch(e){st('Could not save the file')}
+};
+$('#pick').onchange=e=>{loadFile(e.target.files[0]);e.target.value=''};
+
+/* boot */
+(function init(){
+  const size=store.get('bt-size','');
+  if(size){$('#optSize').value=size;document.documentElement.style.setProperty('--body-size',size+'px')}
+  const f=store.get('bt-font','theme'),d=store.get('bt-density','comfortable');
+  if([...$('#optFont').options].some(o=>o.value===f)) $('#optFont').value=f;
+  if([...$('#optDensity').options].some(o=>o.value===d)) $('#optDensity').value=d;
+  setStyle(store.get('bt-style','green'),true);
+  [['#optBoot','bt-boot'],['#optRedact','bt-redact']].forEach(([s,k])=>{const v=store.get(k,null);if(v!==null)$(s).checked=v==='1'});
+  setSource(store.get('bt-hide','0')==='1',true);
+  FIELDS.forEach(([s,k])=>{
+    const v=store.get(k,null);if(v===null)return;
+    const el=$(s);if(el.tagName==='SELECT'&&![...el.options].some(o=>o.value===v||o.text===v))return;
+    el.value=v;
+  });
+  state.seed=parseInt(store.get('bt-seed','0'),10)||0;
+  XFIELDS.forEach(([s,k])=>{$(s).value=store.get(k,'')});
+  try{state.removed=new Set(JSON.parse(store.get('bt-removed','[]')));state.done=new Set(JSON.parse(store.get('bt-done','[]')));state.open=new Set(JSON.parse(store.get('bt-open','[]')))}catch(e){}
+  $('#stage').innerHTML='<div class="empty"><b>Loading</b><p>Reading briefing.txt…</p></div>';
+  loadBriefing(true);
+})();
+</script>
+</body></html>
