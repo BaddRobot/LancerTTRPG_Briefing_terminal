@@ -1563,7 +1563,7 @@ $('#reload').onclick=()=>loadBriefing(false,true);
   if([...$('#optDensity').options].some(o=>o.value===d)) $('#optDensity').value=d;
   setStyle(store.get('bt-style','green'),true);
   [['#optBoot','bt-boot'],['#optRedact','bt-redact']].forEach(([s,k])=>{const v=store.get(k,null);if(v!==null)$(s).checked=v==='1'});
-  setSource(store.get('bt-hide','0')==='1',true);
+  setSource(true,true);
   try{state.removed=new Set(JSON.parse(store.get('bt-removed','[]')));state.done=new Set(JSON.parse(store.get('bt-done','[]')));state.open=new Set(JSON.parse(store.get('bt-open','[]')))}catch(e){}
   $('#stage').innerHTML='<div class="empty"><b>Loading</b><p>Reading briefing.txt…</p></div>';
   loadBriefing(true);
