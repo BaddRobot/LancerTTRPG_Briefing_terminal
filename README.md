@@ -1,1 +1,1 @@
-Simply a resository for plain text
+index.html reformats the text in briefing.txt for display in a script to simulate a sci-fi terminal for readability and navigability. 
